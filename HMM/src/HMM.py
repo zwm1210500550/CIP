@@ -150,6 +150,7 @@ class Binary_HMM(object):
         correct_words = 0
         sentence_num = 0
         print('正在评估测试集...')
+        f = open('./data/predict.txt', 'w', encoding='utf-8')
         for sentence in test_data:
             sentence_num += 1
             # print('正在预测第%d个句子' % (sentence_num))
@@ -161,8 +162,11 @@ class Binary_HMM(object):
             predict = self.viterbi(word_list)
             total_words += len(sentence)
             for i in range(len(predict)):
+                f.write(word_list[i] + '	_	' + list(self.tag_dict.keys())[predict[i]] + '\n')
                 if predict[i] == self.tag_dict[tag_list[i]]:
                     correct_words += 1
+            f.write('\n')
+        f.close()
         print('共%d个句子' % (sentence_num))
         print('共%d个单词，预测正确%d个单词' % (total_words, correct_words))
         print('准确率：%f' % (correct_words / total_words))
