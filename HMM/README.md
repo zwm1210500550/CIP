@@ -6,6 +6,7 @@
 ./data/:
     train.conll: 训练集
     dev.conll: 测试集
+    predict.txt: 预测结果
 ./PPT:
     存放相关的PPT内容，来自于http://hlt.suda.edu.cn/~zhli/teach/cip-2015-fall/
 ./src:
