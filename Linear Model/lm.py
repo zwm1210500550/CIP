@@ -91,13 +91,16 @@ class LinearModel(object):
             features.append(('11', tag, last_char, char))
         if len(word) == 1:
             features.append(('12', tag, word, prev_char, next_char))
-        for i in range(1, len(word) - 1):
-            char, next_char = word[i], word[i + 1]
-            if char == next_char:
+        for i in range(1, len(word)):
+            prev_char, char = word[i - 1], word[i]
+            if prev_char == char:
                 features.append(('13', tag, char, 'consecutive'))
             if i <= 4:
                 features.append(('14', tag, word[:i]))
                 features.append(('15', tag, word[-i:]))
+        if len(word) <= 4:
+            features.append(('14', tag, word))
+            features.append(('15', tag, word))
         return features
 
     def predict(self, wordseq):
