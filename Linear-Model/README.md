@@ -30,8 +30,10 @@
 
 ```bash
 cd ./Linear-Model
-python src/Linear_Model.py
-python src/Linear_Model_V2.py
+python src/Linear_Model.py                 #使用W作为权重
+python src/Linear_Model.py averaged        #使用V作为权重
+python src/Linear_Model_V2.py              #使用W作为权重
+python src/Linear_Model_V2.py              #使用V作为权重
 ```
 
 ##### 3.参考结果
@@ -41,7 +43,7 @@ python src/Linear_Model_V2.py
 | 特征权重     | W            | V            | W               | V               |
 | 执行时间     | 503s         | 522s         | 94s             | 97s             |
 | 训练集准确率 | 99.97%       | 99.74%       | 99.99%          | 98.41%          |
-| 测试集准确率 | 84.49%       | 85.50%       | 85.68%          | 85.55%          |
+| 测试集准确率 | 84.49%       | 85.50%       | 85.65%          | 85.55%          |
 | 迭代次数     | 18           | 10           | 9               | 10              |
 | 最大迭代次数 | 20           | 20           | 20              | 20              |
 
