@@ -62,21 +62,15 @@ if __name__ == "__main__":
         num_out += res[1]
         num_test += res[2]
 
-    print
-    "正确识别的词数：%d" % num_correct
-    print
-    "识别出的总体个数：%d" % num_out
-    print
-    "测试集中的总体个数：%d" % num_test
+    print "正确识别的词数：%d" % num_correct
+    print "识别出的总体个数：%d" % num_out
+    print "测试集中的总体个数：%d" % num_test
     Precision = num_correct / float(num_out)
     Recall = num_correct / float(num_test)
     F = Precision * Recall * 2 / (Precision + Recall)
-    print
-    "正确率：%.5f" % Precision
-    print
-    "召回率：%.5f" % Recall
-    print
-    "F值：%.5f" % F
+    print "正确率：%.5f" % Precision
+    print "召回率：%.5f" % Recall
+    print "F值：%.5f" % F
 
     fin_out.close()
     fin.close()

@@ -59,8 +59,7 @@ if __name__ == "__main__":
     fin2 = open("./data/word_dict.txt", "r")
     fout = open("./data/out.txt", "w")
     dict, MAX_LENGTH = create_dict(fin2)
-    print
-    "初始化词典完成，最大长度为%d" % MAX_LENGTH
+    print "初始化词典完成，最大长度为%d" % MAX_LENGTH
     '''
     用于检验词典是否正确
     for firstword,words in dict.items():

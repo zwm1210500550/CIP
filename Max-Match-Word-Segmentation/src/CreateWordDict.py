@@ -27,8 +27,7 @@ if __name__ == "__main__":
             # 如果不是重复词就放入列表中
             if L[1] not in dict[firstword]:
                 dict[firstword].append(L[1])
-    print
-    "最大单词长度为：%d" % maxwordlen
+    print "最大单词长度为：%d" % maxwordlen
 
     '''
     用于检验字典是否正确
