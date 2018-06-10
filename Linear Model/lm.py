@@ -58,6 +58,39 @@ class LinearModel(object):
             tp, total, precision = self.evaluate(sentences)
             print('iteration %d: %d / %d = %4f' % (it, tp, total, precision))
 
+    def update(self, wordseq, index, tag):
+        # 根据现有权重向量预测词性
+        pre = self.predict(wordseq, index)
+        # 如果预测词性与正确词性不同，则更新权重
+        if tag != pre:
+            cor_features = self.instantialize(wordseq, index, tag)
+            err_features = self.instantialize(wordseq, index, pre)
+            for cf, ef in zip(cor_features, err_features):
+                if cf in self.feadict:
+                    self.weights[self.feadict[cf]] += 1
+                if ef in self.feadict:
+                    self.weights[self.feadict[ef]] -= 1
+            self.average_weights += self.weights
+
+    def predict(self, wordseq, index, average=False):
+        i = np.argmax([
+            self.score(self.instantialize(wordseq, index, tag),
+                       average=average)
+            for tag in self.tags
+        ])
+        return self.tags[i]
+
+    def score(self, features, average=False):
+        # 计算特征对应累加权重的得分
+        if average:
+            scores = [self.average_weights[self.feadict[f]]
+                      for f in features if f in self.feadict]
+        # 计算特征对应未累加权重的得分
+        else:
+            scores = [self.weights[self.feadict[f]]
+                      for f in features if f in self.feadict]
+        return np.sum(scores)
+
     def instantialize(self, wordseq, index, tag):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else "$$"
@@ -93,37 +126,6 @@ class LinearModel(object):
             features.append(('14', tag, word))
             features.append(('15', tag, word))
         return features
-
-    def update(self, wordseq, index, tag):
-        # 根据现有权重向量预测词性
-        pre = self.predict(wordseq, index)
-        # 如果预测词性与正确词性不同，则更新权重
-        if tag != pre:
-            cor_features = self.instantialize(wordseq, index, tag)
-            err_features = self.instantialize(wordseq, index, pre)
-            for cf, ef in zip(cor_features, err_features):
-                if cf in self.feadict:
-                    self.weights[self.feadict[cf]] += 1
-                if ef in self.feadict:
-                    self.weights[self.feadict[ef]] -= 1
-            self.average_weights += self.weights
-
-    def predict(self, wordseq, index, average=False):
-        i = np.argmax([
-            self.score(self.instantialize(wordseq, index, tag),
-                       average=average)
-            for tag in self.tags
-        ])
-        return self.tags[i]
-
-    def score(self, features, average=False):
-        if average:
-            scores = [self.average_weights[self.feadict[f]]
-                      for f in features if f in self.feadict]
-        else:
-            scores = [self.weights[self.feadict[f]]
-                      for f in features if f in self.feadict]
-        return np.sum(scores)
 
     def evaluate(self, sentences):
         tp, total = 0, 0
