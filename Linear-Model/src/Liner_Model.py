@@ -1,4 +1,5 @@
 import datetime
+import numpy as np
 
 
 class dataset(object):
@@ -95,35 +96,54 @@ class liner_model(object):
                 template = self.create_feature_template(sentence, tags[j], j)
                 for f in template:
                     if f not in self.features.keys():
-                        self.features[f] = 0
+                        self.features[f] = len(self.features)
                 for tag in tags:
                     if tag not in self.tag_list:
                         self.tag_list.append(tag)
-
+        self.weights = np.zeros(len(self.features), dtype='int32')
+        self.v = np.zeros(len(self.features), dtype='int32')
         print("the total number of features is %d" % (len(self.features)))
 
     def dot(self, feature):
         score = 0
         for f in feature:
             if f in self.features.keys():
-                score += self.features[f]
+                score += self.weights[self.features[f]]
+        return score
+
+    def dot_v(self, feature):
+        score = 0
+        for f in feature:
+            if f in self.features.keys():
+                score += self.v[self.features[f]]
         return score
 
     def predict(self, sentence, position):
-        score = 0
+        score = -1
         predict_tag = 'null'
         for tag in self.tag_list:
             template = self.create_feature_template(sentence, tag, position)
             cur_score = self.dot(template)
-            if cur_score > score:
+            if cur_score >= score:
+                score = cur_score
+                predict_tag = tag
+        return predict_tag
+
+    def predict_v(self, sentence, position):
+        score = -1
+        predict_tag = 'null'
+        for tag in self.tag_list:
+            template = self.create_feature_template(sentence, tag, position)
+            cur_score = self.dot_v(template)
+            if cur_score >= score:
                 score = cur_score
                 predict_tag = tag
         return predict_tag
 
     def save(self, path):
         f = open(path, 'w', encoding='utf-8')
-        for key, value in self.features.items():
-            f.write(key + '\t' + str(value) + '\n')
+        for key in self.features:
+            f.write(key + '\t' + str(self.weights[self.features[key]]) + '\n')
         f.close()
 
     def evaluate(self, data):
@@ -140,10 +160,25 @@ class liner_model(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
+    def evaluate_v(self, data):
+        total_num = 0
+        correct_num = 0
+        for i in range(len(data.sentences)):
+            sentence = data.sentences[i]
+            tags = data.tags[i]
+            total_num += len(tags)
+            for j in range(len(sentence)):
+                predict_tag = self.predict_v(sentence, j)
+                if predict_tag == tags[j]:
+                    correct_num += 1
+
+        return (correct_num, total_num, correct_num / total_num)
+
     def train(self):
         max_dev_precision = 0
         max_iterator = -1
         for iterator in range(20):
+            print('iterator: %d' % (iterator))
             for i in range(len(self.train_data.sentences)):
                 sentence = self.train_data.sentences[i]
                 tags = self.train_data.tags[i]
@@ -155,13 +190,14 @@ class liner_model(object):
                         feature_gold = self.create_feature_template(sentence, gold_tag, j)
                         for f in feature_max:
                             if f in self.features.keys():
-                                self.features[f] -= 1
+                                self.weights[self.features[f]] -= 1
                         for f in feature_gold:
                             if f in self.features.keys():
-                                self.features[f] += 1
-            print('iterator: %d' % (iterator))
-            # train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
-            # print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
+                                self.weights[self.features[f]] += 1
+                        self.v += self.weights
+
+            train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
+            print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
             if dev_precision > max_dev_precision:
