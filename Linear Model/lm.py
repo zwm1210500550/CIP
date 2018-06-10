@@ -39,33 +39,27 @@ class LinearModel(object):
         self.epsilon = list(feature_space)
         # 特征对应索引的字典
         self.feadict = {f: i for i, f in enumerate(self.epsilon)}
-        # 特征权重
-        self.weights = np.zeros(len(self.epsilon), dtype='int')
         # 特征空间维度
         self.D = len(self.epsilon)
+
+        # 特征权重
+        self.weights = np.zeros(self.D, dtype='int')
+        # 平均特征权重
+        self.average_weights = np.zeros(self.D, dtype='int')
 
     def online_train(self, sentences, iter=20):
         for it in range(iter):
             for sentence in sentences:
                 wordseq, tagseq = zip(*sentence)
-                # 根据现有权重向量标注词性
-                predicts = self.predict(wordseq)
-                for i, (tag, pre) in enumerate(zip(tagseq, predicts)):
-                    # 如果预测词性与正确词性不同，则更新权重
-                    if tag != pre:
-                        cor_features = self.instantialize(wordseq, i, tag)
-                        err_features = self.instantialize(wordseq, i, pre)
-                        for cf, ef in zip(cor_features, err_features):
-                            if cf in self.feadict:
-                                self.weights[self.feadict[cf]] += 1
-                            if ef in self.feadict:
-                                self.weights[self.feadict[ef]] -= 1
+                # 根据单词序列的正确词性更新权重
+                for i, tag in enumerate(tagseq):
+                    self.update(wordseq, i, tag)
 
             tagseqs, preseqs = [], []
             for sentence in sentences:
                 ws, ts = zip(*sentence)
                 tagseqs.append(ts)
-                preseqs.append(lm.predict(ws))
+                preseqs.append([lm.predict(ws, i) for i in range(len(ws))])
             tp, total, precision = lm.evaluate(tagseqs, preseqs)
             print('iteration %d: %d / %d = %4f' % (it, tp, total, precision))
 
@@ -105,16 +99,29 @@ class LinearModel(object):
             features.append(('15', tag, word))
         return features
 
-    def predict(self, wordseq):
-        args = [
-            np.argmax([self.score(self.instantialize(wordseq, i, tag))
-                       for tag in self.tags])
-            for i in range(len(wordseq))
-        ]
-        return [self.tags[i] for i in args]
+    def update(self, wordseq, index, tag):
+        # 根据现有权重向量预测词性
+        pre = self.predict(wordseq, index)
+        # 如果预测词性与正确词性不同，则更新权重
+        if tag != pre:
+            cor_features = self.instantialize(wordseq, index, tag)
+            err_features = self.instantialize(wordseq, index, pre)
+            for cf, ef in zip(cor_features, err_features):
+                if cf in self.feadict:
+                    self.weights[self.feadict[cf]] += 1
+                if ef in self.feadict:
+                    self.weights[self.feadict[ef]] -= 1
+            self.average_weights += self.weights
+
+    def predict(self, wordseq, index):
+        i = np.argmax([
+            self.score(self.instantialize(wordseq, index, tag))
+            for tag in self.tags
+        ])
+        return self.tags[i]
 
     def score(self, features):
-        return sum(self.weights[self.feadict[f]]
+        return sum(self.average_weights[self.feadict[f]]
                    for f in features if f in self.feadict)
 
     def evaluate(self, tagseqs, predicts):
@@ -154,7 +161,7 @@ if __name__ == '__main__':
     for sentence in sentences:
         ws, ts = zip(*sentence)
         tagseqs.append(ts)
-        preseqs.append(lm.predict(ws))
+        preseqs.append([lm.predict(ws, i) for i in range(len(ws))])
 
     print("Evaluating the result")
     tp, total, precision = lm.evaluate(tagseqs, preseqs)
