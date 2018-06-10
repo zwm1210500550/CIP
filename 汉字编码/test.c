@@ -2,7 +2,7 @@
 
 int main()
 {
-    FILE * fp = fopen("test-UTF8","r");
+    FILE * fp = fopen("data/test-UTF8","r");
     char ch = getc(fp);
     while (ch != EOF)
     {
