@@ -33,7 +33,7 @@ cd ./Linear-Model
 python src/Linear_Model.py                 #使用W作为权重
 python src/Linear_Model.py averaged        #使用V作为权重
 python src/Linear_Model_V2.py              #使用W作为权重
-python src/Linear_Model_V2.py              #使用V作为权重
+python src/Linear_Model_V2.py averaged     #使用V作为权重
 ```
 
 ##### 3.参考结果
