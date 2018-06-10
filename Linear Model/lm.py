@@ -48,16 +48,18 @@ class LinearModel(object):
         for it in range(iter):
             for sentence in sentences:
                 wordseq, tagseq = zip(*sentence)
+                # 根据现有权重向量标注词性
                 predicts = self.predict(wordseq)
-                for i, (tag, pos) in enumerate(zip(tagseq, predicts)):
-                    if tag != pos:
-                        features = self.instantialize(wordseq, i, tag)
-                        pos_features = self.instantialize(wordseq, i, pos)
-                        for cf, pf in zip(features, pos_features):
-                            if pf in self.feadict:
-                                self.weights[self.feadict[pf]] -= 1
+                for i, (tag, pre) in enumerate(zip(tagseq, predicts)):
+                    # 如果预测词性与正确词性不同，则更新权重
+                    if tag != pre:
+                        cor_features = self.instantialize(wordseq, i, tag)
+                        err_features = self.instantialize(wordseq, i, pre)
+                        for cf, ef in zip(cor_features, err_features):
                             if cf in self.feadict:
                                 self.weights[self.feadict[cf]] += 1
+                            if ef in self.feadict:
+                                self.weights[self.feadict[ef]] -= 1
 
             tagseqs, preseqs = [], []
             for sentence in sentences:
@@ -113,8 +115,7 @@ class LinearModel(object):
 
     def score(self, features):
         return sum(self.weights[self.feadict[f]]
-                   for f in features
-                   if f in self.feadict)
+                   for f in features if f in self.feadict)
 
     def evaluate(self, tagseqs, predicts):
         tp, total = 0, 0
