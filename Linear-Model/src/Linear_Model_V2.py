@@ -1,4 +1,5 @@
 import datetime
+import sys
 import numpy as np
 
 
@@ -105,51 +106,24 @@ class liner_model(object):
         self.update_times = [0] * (len(self.features) * len(self.tag_dict))
         print("the total number of features is %d" % (len(self.features)))
 
-
-    def dot(self, feature_id, tag):
+    def dot(self, feature_id, tag, averaged=False):
         score = 0
         offset = self.tag_dict[tag] * len(self.features)
         for f_id in feature_id:
-            score += self.weights[f_id + offset]
+            if averaged:
+                score += self.v[f_id + offset]
+            else:
+                score += self.weights[f_id + offset]
         return score
 
-    def dot_v(self, feature_id, tag):
-        score = 0
-        offset = self.tag_dict[tag] * len(self.features)
-        for f_id in feature_id:
-            score += self.v[f_id + offset]
-        return score
-
-    def predict(self, sentence, position):
-        score = -1
-        predict_tag = 'null'
+    def predict(self, sentence, position, averaged=False):
         template = self.create_feature_template(sentence, position)
         f_id = []
         for f in template:
             if f in self.features.keys():
                 f_id.append(self.features[f])
-        for tag in self.tag_dict.keys():
-            predict_score = self.dot(f_id, tag)
-            if predict_score >= score:
-                score = predict_score
-                predict_tag = tag
-        return predict_tag
-
-    def predict_v(self, sentence, position):
-        score = -1
-        predict_tag = 'null'
-        template = self.create_feature_template(sentence, position)
-        f_id = []
-        for f in template:
-            if f in self.features.keys():
-                f_id.append(self.features[f])
-
-        for tag in self.tag_dict.keys():
-            predict_score = self.dot_v(f_id, tag)
-            if predict_score >= score:
-                score = predict_score
-                predict_tag = tag
-        return predict_tag
+        tag_id = np.argmax([self.dot(f_id, tag, averaged) for tag in self.tag_dict])
+        return list(self.tag_dict)[tag_id]
 
     def save(self, path):
         f = open(path, 'w', encoding='utf-8')
@@ -159,7 +133,7 @@ class liner_model(object):
                 f.write(feature[0:3] + tag + '*' + feature[3:] + '\t' + str(self.weights[offset + feature_id]) + '\n')
         f.close()
 
-    def evaluate(self, data):
+    def evaluate(self, data, averaged=False):
         total_num = 0
         correct_num = 0
         for i in range(len(data.sentences)):
@@ -167,23 +141,24 @@ class liner_model(object):
             tags = data.tags[i]
             total_num += len(tags)
             for j in range(len(sentence)):
-                predict_tag = self.predict(sentence, j)
+                predict_tag = self.predict(sentence, j, averaged)
                 if predict_tag == tags[j]:
                     correct_num += 1
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def train(self):
+    def train(self, averaged=False):
         max_dev_precision = 0.0
         max_iterator = -1
         update_time = 0
+        if averaged == True:
+            print('using V to predict dev data...')
         for iterator in range(20):
-
             for i in range(len(self.train_data.sentences)):
                 sentence = self.train_data.sentences[i]
                 tags = self.train_data.tags[i]
                 for j in range(len(sentence)):
-                    predict_tag = self.predict(sentence, j)
+                    predict_tag = self.predict(sentence, j, False)
                     gold_tag = tags[j]
 
                     if predict_tag != gold_tag:
@@ -215,7 +190,7 @@ class liner_model(object):
             print('iterator: %d' % (iterator))
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
-            dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data)
+            dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
             if dev_precision > (max_dev_precision + 1e-10):
                 max_dev_precision = dev_precision
@@ -231,9 +206,16 @@ class liner_model(object):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) == 2:
+        averaged = sys.argv[1]
+    else:
+        averaged = False
     starttime = datetime.datetime.now()
     lm = liner_model()
     lm.create_feature_space()
-    lm.train()
+    if averaged == 'averaged':
+        lm.train(averaged=True)
+    else:
+        lm.train()
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")
