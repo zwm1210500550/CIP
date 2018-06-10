@@ -1,5 +1,7 @@
 # LinearModel
 
+## 运行
+
 ```sh
 $ python lm.py
 Creating Linear Model with 4537 words and 31 tags
@@ -61,4 +63,12 @@ precision: 43037 / 50319 = 0.855283
 25.894133s elapsed
 ```
 
+## 结果
+
+| Weights averaged | Feature extracion optimized | precision |
+| :--------------: | :-------------------------: | :-------: |
+|        ×         |              ×              | 0.849818  |
+|        ×         |              √              | 0.855283  |
+|        √         |              ×              | 0.852581  |
+|        √         |              √              | 0.856197  |
 

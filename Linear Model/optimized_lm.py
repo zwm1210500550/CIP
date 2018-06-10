@@ -51,6 +51,8 @@ class LinearModel(object):
 
         # 特征权重
         self.weights = np.zeros((self.D, self.N), dtype='int')
+        # 平均特征权重
+        self.average_weights = np.zeros((self.D, self.N), dtype='int')
 
     def online_train(self, sentences, iter=20):
         for it in range(iter):
@@ -60,12 +62,7 @@ class LinearModel(object):
                 for i, tag in enumerate(tagseq):
                     self.update(wordseq, i, tag)
 
-            tagseqs, preseqs = [], []
-            for sentence in sentences:
-                ws, ts = zip(*sentence)
-                tagseqs.append(ts)
-                preseqs.append([lm.predict(ws, i) for i in range(len(ws))])
-            tp, total, precision = lm.evaluate(tagseqs, preseqs)
+            tp, total, precision = self.evaluate(sentences)
             print('iteration %d: %d / %d = %4f' % (it, tp, total, precision))
 
     def instantialize(self, wordseq, index):
@@ -116,22 +113,33 @@ class LinearModel(object):
                     p_index = self.tagdict[pre]
                     self.weights[f_index][t_index] += 1
                     self.weights[f_index][p_index] -= 1
+            self.average_weights += self.weights
 
-    def predict(self, wordseq, index):
+    def predict(self, wordseq, index, average=False):
         features = self.instantialize(wordseq, index)
-        i = np.argmax(self.score(features))
+        i = np.argmax(self.score(features, average=average))
         return self.tags[i]
 
-    def score(self, features):
-        return np.sum([self.weights[self.feadict[f]]
-                       for f in features if f in self.feadict],
-                      axis=0)
+    def score(self, features, average=False):
+        if average:
+            scores = [self.average_weights[self.feadict[f]]
+                      for f in features if f in self.feadict]
+        else:
+            scores = [self.weights[self.feadict[f]]
+                      for f in features if f in self.feadict]
+        return np.sum(scores, axis=0)
 
-    def evaluate(self, tagseqs, predicts):
+    def evaluate(self, sentences):
         tp, total = 0, 0
-        for tagseq, predict in zip(tagseqs, predicts):
+        tagseqs, preseqs = [], []
+
+        for sentence in sentences:
+            ws, ts = zip(*sentence)
+            tagseqs.append(ts)
+            preseqs.append([lm.predict(ws, i, True) for i in range(len(ws))])
+        for tagseq, preseq in zip(tagseqs, preseqs):
             total += len(tagseq)
-            tp += sum(t == p for t, p in zip(tagseq, predict))
+            tp += sum(t == p for t, p in zip(tagseq, preseq))
         precision = tp / total
         return tp, total, precision
 
@@ -157,16 +165,11 @@ if __name__ == '__main__':
     lm.online_train(sentences)
 
     sentences = preprocessing('data/dev.conll')
-    tagseqs, preseqs = [], []
 
     print("Using the trained model to tag %d sentences"
           % len(sentences))
-    for sentence in sentences:
-        ws, ts = zip(*sentence)
-        tagseqs.append(ts)
-        preseqs.append([lm.predict(ws, i) for i in range(len(ws))])
 
     print("Evaluating the result")
-    tp, total, precision = lm.evaluate(tagseqs, preseqs)
+    tp, total, precision = lm.evaluate(sentences)
     print("precision: %d / %d = %4f" % (tp, total, precision))
     print("%4fs elapsed" % (time.time() - start))
