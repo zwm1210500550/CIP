@@ -105,27 +105,6 @@ class liner_model(object):
         self.update_times = [0] * (len(self.features) * len(self.tag_dict))
         print("the total number of features is %d" % (len(self.features)))
 
-        # items = self.tag_dict.items()
-        # backitems = [(v[1], v[0]) for v in items]
-        # backitems.sort()
-        # self.tag_dict = {backitems[i][1]: backitems[i][0] for i in range(len(backitems))}
-        # id = 0
-        # for tag in self.tag_dict:
-        #     self.tag_dict[tag] = id
-        #     id += 1
-        # self.tag_dict=self.shuffle(self.tag_dict)
-        # self.features=self.shuffle(self.features)
-        # 输出特征
-        # zy = open("feature.txt", mode = 'w',encoding='utf-8')
-        # for f in self.features:
-        #     zy.write(f+'\n')
-
-    # def shuffle(self, dic):
-    #     temp = [(key, value) for key, value in dic.items()]
-    #     import random
-    #     random.shuffle(temp)
-    #     result = {key: value for key, value in temp}
-    #     return result
 
     def dot(self, feature_id, tag):
         score = 0
@@ -234,14 +213,14 @@ class liner_model(object):
                     self.v[i] += (current_update_times - last_update_times - 1) * last_w_value + self.weights[i]
 
             print('iterator: %d' % (iterator))
-            # train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
-            # print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
+            train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
+            print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
             if dev_precision > (max_dev_precision + 1e-10):
                 max_dev_precision = dev_precision
                 max_iterator = iterator
-                self.save('./result.txt')
+                # self.save('./result.txt')
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision))
 
     def update_v(self, index, update_time, last_w_value):
