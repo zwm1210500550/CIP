@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import time
 
 import numpy as np
 
 
 def preprocessing(ftrain):
+    start = 0
+    sentences = []
     with open(ftrain, 'r') as train:
-        it = iter(train)
-        sentences = []
-        for line in it:
-            sentence = []
-            while len(line) > 1:
-                splits = line.split()
-                sentence.append((splits[1], splits[3]))
-                line = next(it)
-            sentences.append(sentence)
-        return sentences
+        lines = [line for line in train]
+    for i, line in enumerate(lines):
+        if len(lines[i]) <= 1:
+            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            start = i + 1
+            while start < len(lines) and len(lines[start]) <= 1:
+                start += 1
+    return sentences
 
 
 class LinearModel(object):
@@ -71,12 +72,11 @@ class LinearModel(object):
             self.average_weights += self.weights
 
     def predict(self, wordseq, index, average=False):
-        i = np.argmax([
-            self.score(self.instantialize(wordseq, index, tag),
-                       average=average)
-            for tag in self.tags
-        ])
-        return self.tags[i]
+        tag_features = [self.instantialize(wordseq, index, tag)
+                        for tag in self.tags]
+        scores = [self.score(features, average=average)
+                  for features in tag_features]
+        return self.tags[np.argmax(scores)]
 
     def score(self, features, average=False):
         # 计算特征对应累加权重的得分
@@ -125,17 +125,15 @@ class LinearModel(object):
             features.append(('15', tag, word))
         return features
 
-    def evaluate(self, sentences):
+    def evaluate(self, sentences, average=False):
         tp, total = 0, 0
-        tagseqs, preseqs = [], []
 
         for sentence in sentences:
-            ws, ts = zip(*sentence)
-            tagseqs.append(ts)
-            preseqs.append([lm.predict(ws, i, False) for i in range(len(ws))])
-        for tagseq, preseq in zip(tagseqs, preseqs):
-            total += len(tagseq)
-            tp += sum(t == p for t, p in zip(tagseq, preseq))
+            total += len(sentence)
+            wordseq, tagseq = zip(*sentence)
+            preseq = [lm.predict(wordseq, i, average)
+                      for i in range(len(wordseq))]
+            tp += sum([t == p for t, p in zip(tagseq, preseq)])
         precision = tp / total
         return tp, total, precision
 
@@ -156,17 +154,18 @@ if __name__ == '__main__':
     lm.create_feature_space(train)
     print("The size of the feature space is %d" % lm.D)
 
+    average = len(sys.argv) > 1 and sys.argv[1] == 'average'
     evaluations = []
 
     print("Using online-training algorithm to train the model")
     for i in lm.online_train(train):
         print("iteration %d" % i)
-        result = lm.evaluate(train)
+        result = lm.evaluate(train, average=average)
         print("\ttrain: %d / %d = %4f" % result)
-        result = lm.evaluate(dev)
+        result = lm.evaluate(dev, average=average)
         print("\tdev: %d / %d = %4f" % result)
         evaluations.append(result)
 
     print("Successfully evaluated dev data using the model")
-    print("precision: %d / %d = %4f" % max(evaluations, key=lambda x: x[2]))
+    print("Precision: %d / %d = %4f" % max(evaluations, key=lambda x: x[2]))
     print("%4fs elapsed" % (time.time() - start))
