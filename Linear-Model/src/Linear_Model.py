@@ -39,6 +39,8 @@ class liner_model(object):
         self.features = {}
         self.weights = []
         self.tag_list = []
+        self.v = []
+        self.tag_dict = {}
 
     def create_feature_template(self, sentence, tag, position):
         template = []
@@ -103,35 +105,24 @@ class liner_model(object):
                         self.tag_list.append(tag)
         self.weights = np.zeros(len(self.features), dtype='int32')
         self.v = np.zeros(len(self.features), dtype='int32')
+        self.tag_list = sorted(self.tag_list)
+        self.tag_dict = {t: i for i, t in enumerate(self.tag_list)}
         print("the total number of features is %d" % (len(self.features)))
 
-    def dot(self, feature):
+    def dot(self, feature, averaged=False):
         score = 0
         for f in feature:
-            if f in self.features.keys():
-                score += self.weights[self.features[f]]
-        return score
-
-    def dot_v(self, feature):
-        score = 0
-        for f in feature:
-            if f in self.features.keys():
-                score += self.v[self.features[f]]
+            if f in self.features:
+                if averaged == False:
+                    score += self.weights[self.features[f]]
+                else:
+                    score += self.v[self.features[f]]
         return score
 
     def predict(self, sentence, position, averaged=False):
-        score = -1
-        predict_tag = 'null'
-        for tag in self.tag_list:
-            template = self.create_feature_template(sentence, tag, position)
-            if averaged == False:
-                cur_score = self.dot(template)
-            else:
-                cur_score = self.dot_v(template)
-            if cur_score >= score:
-                score = cur_score
-                predict_tag = tag
-        return predict_tag
+        tagid = np.argmax(
+            [self.dot(self.create_feature_template(sentence, tag, position), averaged) for tag in self.tag_list])
+        return self.tag_list[tagid]
 
     def save(self, path):
         f = open(path, 'w', encoding='utf-8')
@@ -196,6 +187,8 @@ if __name__ == '__main__':
     starttime = datetime.datetime.now()
     lm = liner_model()
     lm.create_feature_space()
+    print(lm.tag_list)
+    print(lm.tag_dict)
     if averaged == 'averaged':
         lm.train(averaged=True)
     else:

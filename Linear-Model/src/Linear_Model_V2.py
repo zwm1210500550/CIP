@@ -40,6 +40,7 @@ class liner_model(object):
         self.weights = []
         self.v = []
         self.tag_dict = {}
+        self.tag_list = []
 
     def create_feature_template(self, sentence, position):
         template = []
@@ -98,9 +99,10 @@ class liner_model(object):
                     if f not in self.features.keys():
                         self.features[f] = len(self.features)
                 for tag in tags:
-                    if tag not in self.tag_dict.keys():
-                        self.tag_dict[tag] = len(self.tag_dict)
-
+                    if tag not in self.tag_list:
+                        self.tag_list.append(tag)
+        self.tag_list = sorted(self.tag_list)
+        self.tag_dict = {t: i for i, t in enumerate(self.tag_list)}
         self.weights = [0] * (len(self.features) * len(self.tag_dict))
         self.v = [0] * (len(self.features) * len(self.tag_dict))
         self.update_times = [0] * (len(self.features) * len(self.tag_dict))
@@ -192,7 +194,7 @@ class liner_model(object):
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
-            if dev_precision > (max_dev_precision + 1e-10):
+            if dev_precision > (max_dev_precision):
                 max_dev_precision = dev_precision
                 max_iterator = iterator
                 # self.save('./result.txt')
