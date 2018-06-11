@@ -21,11 +21,11 @@ def preprocessing(ftrain):
 
 class LinearModel(object):
 
-    def __init__(self, words, tags):
-        # 所有不同的单词
-        self.words = words
+    def __init__(self, tags):
         # 所有不同的词性
         self.tags = tags
+
+        self.N = len(self.tags)
 
     def create_feature_space(self, sentences):
         feature_space = set()
@@ -43,9 +43,9 @@ class LinearModel(object):
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.weights = np.zeros(self.D, dtype='int')
+        self.weights = np.zeros(self.D)
         # 平均特征权重
-        self.average_weights = np.zeros(self.D, dtype='int')
+        self.average_weights = np.zeros(self.D)
 
     def online_train(self, sentences, iter=20):
         for it in range(iter):
@@ -54,9 +54,7 @@ class LinearModel(object):
                 # 根据单词序列的正确词性更新权重
                 for i, tag in enumerate(tagseq):
                     self.update(wordseq, i, tag)
-
-            tp, total, precision = self.evaluate(sentences)
-            print('iteration %d: %d / %d = %4f' % (it, tp, total, precision))
+            yield it
 
     def update(self, wordseq, index, tag):
         # 根据现有权重向量预测词性
@@ -143,31 +141,34 @@ class LinearModel(object):
 
 
 if __name__ == '__main__':
-    sentences = preprocessing('data/train.conll')
+    train = preprocessing('data/train.conll')
+    dev = preprocessing('data/dev.conll')
 
-    all_words, all_tags = zip(*np.vstack(sentences))
-    words, tags = list(set(all_words)), list(set(all_tags))
+    all_words, all_tags = zip(*np.vstack(train))
+    tags = list(set(all_tags))
 
     start = time.time()
 
-    print("Creating Linear Model with %d words and %d tags"
-          % (len(words), len(tags)))
-    lm = LinearModel(words, tags)
+    print("Creating Linear Model with %d tags"
+          % (len(tags)))
+    lm = LinearModel(tags)
 
     print("Using %d sentences to create the feature space"
-          % (len(sentences)))
-    lm.create_feature_space(sentences)
+          % (len(train)))
+    lm.create_feature_space(train)
     print("The size of the feature space is %d" % lm.D)
 
+    evaluations = []
+
     print("Using online-training algorithm to train the model")
-    lm.online_train(sentences)
+    for i in lm.online_train(train):
+        print("iteration %d" % i)
+        result = lm.evaluate(train)
+        print("\ttrain: %d / %d = %4f" % result)
+        result = lm.evaluate(dev)
+        print("\tdev: %d / %d = %4f" % result)
+        evaluations.append(result)
 
-    sentences = preprocessing('data/dev.conll')
-
-    print("Using the trained model to tag %d sentences"
-          % len(sentences))
-
-    print("Evaluating the result")
-    tp, total, precision = lm.evaluate(sentences)
-    print("precision: %d / %d = %4f" % (tp, total, precision))
+    print("Successfully evaluated dev data using the model")
+    print("precision: %d / %d = %4f" % max(evaluations, key=lambda x: x[2]))
     print("%4fs elapsed" % (time.time() - start))
