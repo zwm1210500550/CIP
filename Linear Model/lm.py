@@ -43,9 +43,9 @@ class LinearModel(object):
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.weights = np.zeros(self.D)
+        self.weights = np.zeros(self.D, dtype='int')
         # 平均特征权重
-        self.average_weights = np.zeros(self.D)
+        self.average_weights = np.zeros(self.D, dtype='int')
 
     def online_train(self, sentences, iter=20):
         for it in range(iter):
@@ -132,7 +132,7 @@ class LinearModel(object):
         for sentence in sentences:
             ws, ts = zip(*sentence)
             tagseqs.append(ts)
-            preseqs.append([lm.predict(ws, i, True) for i in range(len(ws))])
+            preseqs.append([lm.predict(ws, i, False) for i in range(len(ws))])
         for tagseq, preseq in zip(tagseqs, preseqs):
             total += len(tagseq)
             tp += sum(t == p for t, p in zip(tagseq, preseq))
@@ -145,16 +145,14 @@ if __name__ == '__main__':
     dev = preprocessing('data/dev.conll')
 
     all_words, all_tags = zip(*np.vstack(train))
-    tags = list(set(all_tags))
+    tags = sorted(list(set(all_tags)))
 
     start = time.time()
 
-    print("Creating Linear Model with %d tags"
-          % (len(tags)))
+    print("Creating Linear Model with %d tags" % (len(tags)))
     lm = LinearModel(tags)
 
-    print("Using %d sentences to create the feature space"
-          % (len(train)))
+    print("Using %d sentences to create the feature space" % (len(train)))
     lm.create_feature_space(train)
     print("The size of the feature space is %d" % lm.D)
 

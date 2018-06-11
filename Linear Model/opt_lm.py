@@ -45,9 +45,9 @@ class LinearModel(object):
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.weights = np.zeros((self.D, self.N))
+        self.weights = np.zeros((self.D, self.N), dtype='int')
         # 平均特征权重
-        self.average_weights = np.zeros((self.D, self.N))
+        self.average_weights = np.zeros((self.D, self.N), dtype='int')
 
     def online_train(self, sentences, iter=20):
         # 迭代指定次数训练模型
@@ -67,8 +67,7 @@ class LinearModel(object):
             for feature in self.instantialize(wordseq, index):
                 if feature in self.feadict:
                     f_index = self.feadict[feature]
-                    t_index = self.tagdict[tag]
-                    p_index = self.tagdict[pre]
+                    t_index, p_index = self.tagdict[tag], self.tagdict[pre]
                     self.weights[f_index][t_index] += 1
                     self.weights[f_index][p_index] -= 1
             self.average_weights += self.weights
@@ -145,16 +144,14 @@ if __name__ == '__main__':
     dev = preprocessing('data/dev.conll')
 
     all_words, all_tags = zip(*np.vstack(train))
-    tags = list(set(all_tags))
+    tags = sorted(list(set(all_tags)))
 
     start = time.time()
 
-    print("Creating Linear Model with %d tags"
-          % (len(tags)))
+    print("Creating Linear Model with %d tags" % (len(tags)))
     lm = LinearModel(tags)
 
-    print("Using %d sentences to create the feature space"
-          % (len(train)))
+    print("Using %d sentences to create the feature space" % (len(train)))
     lm.create_feature_space(train)
     print("The size of the feature space is %d" % lm.D)
 
