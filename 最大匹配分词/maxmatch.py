@@ -67,7 +67,7 @@ def evaluate(fout, fdata):
     precision = tp / total_out
     recall = tp / total_data
     f = precision * recall * 2 / (precision + recall)
-    return precision, recall, f
+    return tp, total_out, total_data, precision, recall, f
 
 
 if __name__ == '__main__':
@@ -83,5 +83,7 @@ if __name__ == '__main__':
     max_match(TEXT, DICT, OUTPUT, max_num)
 
     print("Evaluating the result")
-    P, R, F = evaluate(OUTPUT, DATA)
-    print("P: %4f\nR: %4f\nF: %4f" % (P, R, F))
+    tp, total_out, total_data, P, R, F = evaluate(OUTPUT, DATA)
+    print("Precision: %d / %d = %4f" % (tp, total_out, P))
+    print("Recall: %d / %d = %4f" % (tp, total_data, R))
+    print("F-value: %4f * %4f * 2 / (%4f + %4f) = %4f" % (P, R, P, R, F))

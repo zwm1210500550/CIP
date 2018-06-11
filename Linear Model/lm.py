@@ -131,7 +131,7 @@ class LinearModel(object):
         for sentence in sentences:
             total += len(sentence)
             wordseq, tagseq = zip(*sentence)
-            preseq = [lm.predict(wordseq, i, average)
+            preseq = [self.predict(wordseq, i, average)
                       for i in range(len(wordseq))]
             tp += sum([t == p for t, p in zip(tagseq, preseq)])
         precision = tp / total

@@ -6,17 +6,17 @@ import numpy as np
 
 
 def preprocessing(ftrain):
+    start = 0
+    sentences = []
     with open(ftrain, 'r') as train:
-        it = iter(train)
-        sentences = []
-        for line in it:
-            sentence = []
-            while len(line) > 1:
-                splits = line.split()
-                sentence.append((splits[1], splits[3]))
-                line = next(it)
-            sentences.append(sentence)
-        return sentences
+        lines = [line for line in train]
+    for i, line in enumerate(lines):
+        if len(lines[i]) <= 1:
+            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            start = i + 1
+            while start < len(lines) and len(lines[start]) <= 1:
+                start += 1
+    return sentences
 
 
 class HMM(object):
@@ -83,43 +83,37 @@ class HMM(object):
         sums = np.sum(matrix, axis=0)
         return (matrix + alpha) / (sums + alpha * len(matrix))
 
-    def evaluate(self, tagseqs, predicts):
+    def evaluate(self, sentences):
         tp, total = 0, 0
-        for tagseq, predict in zip(tagseqs, predicts):
-            total += len(tagseq)
-            tp += sum(t == p for t, p in zip(tagseq, predict))
+
+        for sentence in sentences:
+            total += len(sentence)
+            wordseq, tagseq = zip(*sentence)
+            preseq = self.viterbi(wordseq)
+            tp += sum([t == p for t, p in zip(tagseq, preseq)])
         precision = tp / total
         return tp, total, precision
 
 
 if __name__ == '__main__':
-    sentences = preprocessing('data/train.conll')
+    train = preprocessing('data/train.conll')
+    dev = preprocessing('data/dev.conll')
 
-    all_words, all_tags = zip(*np.vstack(sentences))
+    all_words, all_tags = zip(*np.vstack(train))
     words, tags = list(set(all_words)), list(set(all_tags))
 
-    print("Creating HMM with %d words and %d tags"
-          % (len(words), len(tags)))
+    start = time.time()
+
+    print("Creating HMM with %d words and %d tags" % (len(words), len(tags)))
     hmm = HMM(words, tags)
 
-    print("Using %d sentences to train the HMM"
-          % (len(sentences)))
-    hmm.train(sentences)
+    print("Using %d sentences to train the HMM" % (len(train)))
+    hmm.train(train)
 
-    sentences = preprocessing('data/dev.conll')
-    tagseqs, preseqs = [], []
+    print("Using Viterbi algorithm to tag the dev data")
+    tp, total, precision = hmm.evaluate(dev)
 
-    print("Using Viterbi algorithm to tag %d sentences"
-          % len(sentences))
-    start = time.time()
-    for sentence in sentences:
-        ws, ts = zip(*sentence)
-        tagseqs.append(ts)
-        preseqs.append(hmm.viterbi(ws))
-    print("Successfully tagged all the sentences. %4fs elapsed"
-          % (time.time() - start))
+    print("Successfully evaluated dev data using the model")
+    print("Precision: %d / %d = %4f" % (tp, total, precision))
 
-    print("Evaluating the result")
-    tp, total, precision = hmm.evaluate(tagseqs, preseqs)
-    print("tp: %d\ntotal: %d\nprecision: %4f"
-          % (tp, total, precision))
+    print("%4fs elapsed" % (time.time() - start))
