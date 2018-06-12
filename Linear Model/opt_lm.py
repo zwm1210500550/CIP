@@ -46,11 +46,11 @@ class LinearModel(object):
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.weights = np.zeros((self.D, self.N), dtype='int')
-        # 平均特征权重
-        self.average_weights = np.zeros((self.D, self.N), dtype='int')
+        self.W = np.zeros((self.D, self.N), dtype='int')
+        # 累加特征权重
+        self.V = np.zeros((self.D, self.N), dtype='int')
 
-    def online_train(self, sentences, iter=20):
+    def online(self, sentences, iter=20):
         # 迭代指定次数训练模型
         for it in range(iter):
             for sentence in sentences:
@@ -69,9 +69,9 @@ class LinearModel(object):
                 if feature in self.feadict:
                     f_index = self.feadict[feature]
                     t_index, p_index = self.tagdict[tag], self.tagdict[pre]
-                    self.weights[f_index][t_index] += 1
-                    self.weights[f_index][p_index] -= 1
-            self.average_weights += self.weights
+                    self.W[f_index][t_index] += 1
+                    self.W[f_index][p_index] -= 1
+            self.V += self.W
 
     def predict(self, wordseq, index, average=False):
         features = self.instantialize(wordseq, index)
@@ -81,11 +81,11 @@ class LinearModel(object):
     def score(self, features, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.average_weights[self.feadict[f]]
+            scores = [self.V[self.feadict[f]]
                       for f in features if f in self.feadict]
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.weights[self.feadict[f]]
+            scores = [self.W[self.feadict[f]]
                       for f in features if f in self.feadict]
         return np.sum(scores, axis=0)
 
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     dev = preprocessing('data/dev.conll')
 
     all_words, all_tags = zip(*np.vstack(train))
-    tags = sorted(list(set(all_tags)))
+    tags = sorted(set(all_tags))
 
     start = time.time()
 
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     evaluations = []
 
     print("Using online-training algorithm to train the model")
-    for i in lm.online_train(train):
+    for i in lm.online(train):
         print("iteration %d" % i)
         result = lm.evaluate(train, average=average)
         print("\ttrain: %d / %d = %4f" % result)

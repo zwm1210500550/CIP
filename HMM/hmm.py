@@ -100,7 +100,7 @@ if __name__ == '__main__':
     dev = preprocessing('data/dev.conll')
 
     all_words, all_tags = zip(*np.vstack(train))
-    words, tags = list(set(all_words)), list(set(all_tags))
+    words, tags = sorted(set(all_words)), sorted(set(all_tags))
 
     start = time.time()
 
