@@ -30,9 +30,9 @@
 
 ```bash
 cd ./Log-Linear-Model
-python src/log-linear-model.py 								#不使用正则化和步长优化
-python src/log-linear-model.py optimize                     #使用正则化和步长优化
-python src/log-linear-model-partial-feature.py    			#不使用正则化和步长优化
+python src/log-linear-model.py					#不使用正则化和步长优化
+python src/log-linear-model.py optimize         #使用正则化和步长优化
+python src/log-linear-model-partial-feature.py	#不使用正则化和步长优化
 python src/log-linear-model-partial-feature.py  optimize	#使用正则化和步长优化
 ```
 
