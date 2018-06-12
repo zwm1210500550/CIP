@@ -196,6 +196,7 @@ class loglinear_model(object):
         b = 0
         max_dev_precision = 0
         eta = 0.5
+        C = 0.0001
         for iter in range(iteration):
             print('iterator: %d' % (iter))
             for i in range(len(self.train_data.sentences)):
@@ -204,36 +205,34 @@ class loglinear_model(object):
                 for j in range(len(sentence)):
                     b += 1
                     gold_tag = tags[j]
-                    gold_feature = self.create_feature_template(sentence, gold_tag, j)
+                    gold_feature = self.create_feature_template(sentence, j)
+                    gold_offset = self.tag_dict[gold_tag] * len(self.features)
                     for f in gold_feature:
                         if f in self.features:
-                            self.g[self.features[f]] += 1
+                            self.g[self.features[f] + gold_offset] += 1
 
                     feature_list = []
                     prob_list = []
-                    for tag_id in range(len(self.tag_list)):
-                        feature = self.create_feature_template(sentence, self.tag_list[tag_id], j)
-                        feature_list.append(feature)
-                        prob_list.append(np.exp(self.dot(feature)))
+                    for tag in self.tag_dict:
+                        feature = self.create_feature_template(sentence, j)
+                        feature_list.append((feature, tag))
+                        prob_list.append(np.exp(self.dot(feature, tag)))
                     s = sum(prob_list)
                     for k in range(len(feature_list)):
-                        for f in feature_list[k]:
+                        for f in feature_list[k][0]:
+                            offset = self.tag_dict[feature_list[k][1]] * len(self.features)
                             if f in self.features:
-                                self.g[self.features[f]] -= prob_list[k] / s
+                                self.g[self.features[f] + offset] -= prob_list[k] / s
 
                     if b == batch_size:
-                        # self.weights -= 0.000001 * self.weights
-                        self.weights += self.g
+                        self.weights += eta * self.g - C * eta * self.weights
                         b = 0
                         eta = max(eta * 0.999, 0.00001)
-                        # print(eta)
-                        self.g = np.zeros(len(self.features))
+                        self.g = np.zeros(len(self.features) * len(self.tag_dict))
             if b > 0:
-                # self.weights -= 0.000001 * self.weights
-                self.weights += self.g
+                self.weights += eta * self.g - C * eta * self.weights
                 b = 0
                 eta = max(eta * 0.999, 0.00001)
-                # print(eta)
                 self.g = np.zeros(len(self.features) * len(self.tag_dict))
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
@@ -256,8 +255,9 @@ if __name__ == '__main__':
     model = loglinear_model()
     model.create_feature_space()
     if optimized == 'optimize':
-        model.optimize_train(40, 50)
+        print('using regulization and step optimization')
+        model.optimize_train(20, 50)
     else:
-        model.basic_train(40, 50)
+        model.basic_train(20, 50)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")

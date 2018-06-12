@@ -193,7 +193,8 @@ class loglinear_model(object):
     def optimize_train(self, iteration, batch_size=50):
         b = 0
         max_dev_precision = 0
-        eta = 0.01
+        eta = 0.5
+        C = 0.0001
         for iter in range(iteration):
             print('iterator: %d' % (iter))
             for i in range(len(self.train_data.sentences)):
@@ -220,18 +221,14 @@ class loglinear_model(object):
                                 self.g[self.features[f]] -= prob_list[k] / s
 
                     if b == batch_size:
-                        # self.weights -= 0.000001 * self.weights
-                        self.weights += self.g
+                        self.weights += eta * self.g - C * eta * self.weights
                         b = 0
                         eta = max(eta * 0.999, 0.00001)
-                        # print(eta)
                         self.g = np.zeros(len(self.features))
             if b > 0:
-                # self.weights -= 0.000001 * self.weights
-                self.weights += self.g
+                self.weights += eta * self.g - C * eta * self.weights
                 b = 0
                 eta = max(eta * 0.999, 0.00001)
-                # print(eta)
                 self.g = np.zeros(len(self.features))
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
@@ -253,9 +250,10 @@ if __name__ == '__main__':
     print('start...')
     model = loglinear_model()
     model.create_feature_space()
-    if optimized=='optimize':
-        model.optimize_train(40,50)
+    if optimized == 'optimize':
+        print('using regulization and step optimization')
+        model.optimize_train(20, 50)
     else:
-        model.basic_train(40,50)
+        model.basic_train(20, 50)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")
