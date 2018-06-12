@@ -1,0 +1,68 @@
+nohup: ignoring input
+./data/train.conll:共803个句子,共20454个词。
+./data/dev.conll:共1910个句子,共50319个词。
+the total number of features is 81541
+iterator: 0
+	train准确率：18600 / 20454 = 0.909358
+	dev准确率：40695 / 50319 = 0.808740
+iterator: 1
+	train准确率：19354 / 20454 = 0.946221
+	dev准确率：41727 / 50319 = 0.829249
+iterator: 2
+	train准确率：19801 / 20454 = 0.968075
+	dev准确率：42842 / 50319 = 0.851408
+iterator: 3
+	train准确率：20041 / 20454 = 0.979808
+	dev准确率：42928 / 50319 = 0.853117
+iterator: 4
+	train准确率：20070 / 20454 = 0.981226
+	dev准确率：43034 / 50319 = 0.855224
+iterator: 5
+	train准确率：20166 / 20454 = 0.985920
+	dev准确率：43061 / 50319 = 0.855760
+iterator: 6
+	train准确率：20262 / 20454 = 0.990613
+	dev准确率：43388 / 50319 = 0.862259
+iterator: 7
+	train准确率：20238 / 20454 = 0.989440
+	dev准确率：42909 / 50319 = 0.852740
+iterator: 8
+	train准确率：20107 / 20454 = 0.983035
+	dev准确率：42499 / 50319 = 0.844592
+iterator: 9
+	train准确率：20398 / 20454 = 0.997262
+	dev准确率：43420 / 50319 = 0.862895
+iterator: 10
+	train准确率：20413 / 20454 = 0.997996
+	dev准确率：43549 / 50319 = 0.865458
+iterator: 11
+	train准确率：20399 / 20454 = 0.997311
+	dev准确率：43301 / 50319 = 0.860530
+iterator: 12
+	train准确率：20419 / 20454 = 0.998289
+	dev准确率：43477 / 50319 = 0.864028
+iterator: 13
+	train准确率：20322 / 20454 = 0.993546
+	dev准确率：43186 / 50319 = 0.858244
+iterator: 14
+	train准确率：20418 / 20454 = 0.998240
+	dev准确率：43564 / 50319 = 0.865756
+iterator: 15
+	train准确率：20423 / 20454 = 0.998484
+	dev准确率：43482 / 50319 = 0.864127
+iterator: 16
+	train准确率：20431 / 20454 = 0.998876
+	dev准确率：43570 / 50319 = 0.865876
+iterator: 17
+	train准确率：20447 / 20454 = 0.999658
+	dev准确率：43624 / 50319 = 0.866949
+iterator: 18
+	train准确率：20426 / 20454 = 0.998631
+	dev准确率：43589 / 50319 = 0.866253
+iterator: 19
+	train准确率：20443 / 20454 = 0.999462
+	dev准确率：43535 / 50319 = 0.865180
+iterator = 17 , max_dev_precision = 0.866949
+global-linear-model.py:127: RuntimeWarning: divide by zero encountered in log
+  max_score = np.log(max_score)
+executing time is 14634 s
