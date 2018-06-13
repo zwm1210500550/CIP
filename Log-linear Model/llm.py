@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import time
+import random
 
 import numpy as np
 
@@ -45,16 +46,18 @@ class LogLinearModel(object):
         # 特征权重
         self.W = np.zeros(self.D)
 
-    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, iter=15):
+    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, iter=10):
         training_data = []
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
                 training_data.append((wordseq, i, tag))
-        batches = [training_data[i:i + B]
-                   for i in range(0, len(training_data), B)]
         for it in range(iter):
+            random.shuffle(training_data)
+            batches = [training_data[i:i + B]
+                       for i in range(0, len(training_data), B)]
             for batch in batches:
+                # 根据批次数据更新权重
                 self.update(batch, C, max(eta, 0.00001))
                 eta *= 0.999
             yield it
@@ -65,7 +68,7 @@ class LogLinearModel(object):
             for cf in self.instantialize(wordseq, i, tag):
                 if cf in self.feadict:
                     gradients[self.feadict[cf]] += 1
-
+            # 获取每个词性对应的所有特征
             tag_features = [self.instantialize(wordseq, i, t)
                             for t in self.tags]
             scores = [self.score(features) for features in tag_features]
@@ -75,7 +78,7 @@ class LogLinearModel(object):
                 for f in features:
                     if f in self.feadict:
                         gradients[self.feadict[f]] -= p
-        # self.W -= eta * C * self.W
+        self.W -= eta * C * self.W
         self.W += eta * gradients
 
     def predict(self, wordseq, index):
