@@ -1,7 +1,12 @@
 import numpy as np
 import datetime
 
-alpha = 0.3
+from config import config
+
+train_data_file = config['train_data_file']
+test_data_file = config['test_data_file']
+predict_file = config['predict_file']
+alpha = config['alpha']
 
 
 def read_data(filename):
@@ -48,7 +53,7 @@ class Binary_HMM(object):
             [len(self.tag_dict) - 1, len(self.tag_dict) - 1])  # 第(i,j)个元素表示词性j在词性i后面的概率,最后一行是start，最后一列是stop
         self.launch_matrix = np.zeros([len(self.tag_dict) - 2, len(self.word_dict)])  # 第(i,j)个元素表示词性i发射到词j的概率
 
-    def launch_params(self):
+    def launch_params(self, alpha):
         for sentence in self.train_data:
             for word, tag in sentence:
                 self.launch_matrix[self.tag_dict[tag]][self.word_dict[word]] += 1
@@ -57,7 +62,7 @@ class Binary_HMM(object):
             for j in range(len(self.launch_matrix[i])):
                 self.launch_matrix[i][j] = (self.launch_matrix[i][j] + alpha) / (s + alpha * (len(self.word_dict)))
 
-    def transition_params(self):
+    def transition_params(self, alpha):
         for i in range(len(self.train_data)):
             for j in range(len(self.train_data[i]) + 1):
                 if j == 0:
@@ -150,7 +155,7 @@ class Binary_HMM(object):
         correct_words = 0
         sentence_num = 0
         print('正在评估测试集...')
-        f = open('./data/predict.txt', 'w', encoding='utf-8')
+        f = open(predict_file, 'w', encoding='utf-8')
         for sentence in test_data:
             sentence_num += 1
             # print('正在预测第%d个句子' % (sentence_num))
@@ -173,11 +178,11 @@ class Binary_HMM(object):
 
 
 if __name__ == '__main__':
-    train_data = read_data('./data/train.conll')
+    train_data = read_data(train_data_file)
     HMM = Binary_HMM(train_data)
-    HMM.launch_params()
-    HMM.transition_params()
-    test_data = read_data('./data/dev.conll')
+    HMM.launch_params(alpha)
+    HMM.transition_params(alpha)
+    test_data = read_data(test_data_file)
     starttime = datetime.datetime.now()
     HMM.evaluate(test_data)
     endtime = datetime.datetime.now()

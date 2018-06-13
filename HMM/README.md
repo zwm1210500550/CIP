@@ -6,11 +6,14 @@
 ./data/:
     train.conll: 训练集
     dev.conll: 测试集
-    predict.txt: 预测结果
-./PPT:
-    存放相关的PPT内容，来自于http://hlt.suda.edu.cn/~zhli/teach/cip-2015-fall/
+./big-data/:
+	train.conll: 大数据训练集
+	dev.conll: 大数据开发集
+	test.conll: 大数据测试集
 ./src:
+	config.py: 配置文件
     HMM.py: 一阶隐马尔可夫模型的代码
+./predict.txt: 预测结果
 ./README.md: 使用说明
 ```
 
@@ -24,20 +27,45 @@
 
 ##### 2.运行方法
 
+```
+#配置文件中各个参数
+config = {
+    'train_data_file': './data/train.conll',   #训练集文件,大数据改为'./big-data/train.conll'
+    'test_data_file': './data/test.conll',     #测试集文件,大数据改为'./big-data/test.conll'
+    										   #或者'./big-data/dev.conll'
+	'predict_file': './predict_txt'			   #模型预测结果文件
+	'alpha': 0.3 							   #平滑参数
+}
+```
+
 ```bash
-cd ./HMM
-python src/HMM.py
+$ cd ./HMM
+$ python src/HMM.py			#修改config.py中的参数
 ```
 
 ##### 3.参考结果
 
-```
-正在评估测试集...
-共1910个句子
-共50319个单词，预测正确38110个单词
-准确率：0.757368
-共耗时0:00:24.219168
-```
+##### (1)小数据测试
 
-注：旧版的数据(包括测试集和训练集)准确率达到89%左右。
+注：可以修改不同的alpha比较准确率。训练集数据少结果可能不稳定。
+
+| 训练集    | ./data/train.conll |
+| --------- | ------------------ |
+| 测试集    | ./data/dev.conll   |
+| 参数alpha | 0.3                |
+| 准确率    | 75.74%             |
+| 执行时间  | 23.8s              |
+
+##### (2)大数据测试
+
+注：可以修改不同的alpha比较准确率
+
+| 训练集    | ./big-data/train.conll | ./big-data/train.conll |
+| --------- | ---------------------- | ---------------------- |
+| 测试集    | ./big-data/dev.conll   | ./big-data/test.conll  |
+| 参数alpha | 0.01                   | 0.01                   |
+| 准确率    | 88.35%                 | 88.50%                 |
+| 执行时间  | 63.8s                  | 88.7s                  |
+
+
 
