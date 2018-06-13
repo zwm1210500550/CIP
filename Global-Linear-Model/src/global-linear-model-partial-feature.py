@@ -204,10 +204,10 @@ class global_liner_model(object):
                                 self.weights[self.features[f] + self.tag2id[tags[j]] * len(self.features)] += 1
                         for f in predict_feature:
                             if f in self.features:
-                                self.weights[self.features[f] + self.tag2id[predict[j]] + len(self.features)] -= 1
+                                self.weights[self.features[f] + self.tag2id[predict[j]] * len(self.features)] -= 1
 
                     self.v += self.weights
-                        
+
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data, False)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
