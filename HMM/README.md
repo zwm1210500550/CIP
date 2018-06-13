@@ -7,11 +7,11 @@
     train.conll: 训练集
     dev.conll: 测试集
 ./big-data/:
-	train.conll: 大数据训练集
-	dev.conll: 大数据开发集
-	test.conll: 大数据测试集
+    train.conll: 大数据训练集
+    dev.conll: 大数据开发集
+    test.conll: 大数据测试集
 ./src:
-	config.py: 配置文件
+    config.py: 配置文件
     HMM.py: 一阶隐马尔可夫模型的代码
 ./predict.txt: 预测结果
 ./README.md: 使用说明
@@ -33,8 +33,8 @@ config = {
     'train_data_file': './data/train.conll',   #训练集文件,大数据改为'./big-data/train.conll'
     'test_data_file': './data/test.conll',     #测试集文件,大数据改为'./big-data/test.conll'
     										   #或者'./big-data/dev.conll'
-	'predict_file': './predict_txt'			   #模型预测结果文件
-	'alpha': 0.3 							   #平滑参数
+    'predict_file': './predict_txt'			   #模型预测结果文件
+    'alpha': 0.3 							   #平滑参数
 }
 ```
 
