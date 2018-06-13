@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys
+import random
 import time
 
 import numpy as np
@@ -47,34 +47,40 @@ class LogLinearModel(object):
 
         # 特征权重
         self.W = np.zeros((self.D, self.N))
-        # 累加特征权重
-        self.V = np.zeros((self.D, self.N))
 
-    def SGD(self, sentences, batch_size=50, iter=40):
-        b = 0
-        gradients = np.zeros((self.D, self.N), dtype='float128')
+    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, iter=20):
+        training_data = []
+        for sentence in sentences:
+            wordseq, tagseq = zip(*sentence)
+            for i, tag in enumerate(tagseq):
+                training_data.append((wordseq, i, tag))
         for it in range(iter):
-            for sentence in sentences:
-                wordseq, tagseq = zip(*sentence)
-                # 根据单词序列的正确词性更新权重
-                for i, tag in enumerate(tagseq):
-                    b += 1
-                    tag_index = self.tagdict[tag]
-                    features = self.instantialize(wordseq, i)
-                    scores = np.array(self.score(features))
-                    probs = np.array([1 / sum(np.exp(scores - s))
-                                      for s in scores])
-
-                    for f in features:
-                        if f in self.feadict:
-                            gradients[self.feadict[f]][tag_index] += 1
-                            gradients[self.feadict[f]] *= (1 - probs)
-
-                    if b == batch_size:
-                        self.W += gradients
-                        gradients = np.zeros((self.D, self.N))
-                        b = 0
+            random.shuffle(training_data)
+            batches = [training_data[i:i + B]
+                       for i in range(0, len(training_data), B)]
+            for batch in batches:
+                # 根据批次数据更新权重
+                self.update(batch, C, max(eta, 0.00001))
+                eta *= 0.999
             yield it
+
+    def update(self, batch, C, eta):
+        gradients = np.zeros((self.D, self.N))
+        for wordseq, i, tag in batch:
+            t_index = self.tagdict[tag]
+
+            features = self.instantialize(wordseq, i)
+            scores = self.score(features)
+            probs = np.exp(scores) / sum(np.exp(scores))
+
+            for f in features:
+                if f in self.feadict:
+                    f_index = self.feadict[f]
+                    gradients[f_index][t_index] += 1
+                    gradients[f_index] -= probs
+
+        self.W -= eta * C * self.W
+        self.W += eta * gradients
 
     def predict(self, wordseq, index):
         features = self.instantialize(wordseq, index)

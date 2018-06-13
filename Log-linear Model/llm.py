@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import time
 import random
+import time
 
 import numpy as np
 
@@ -46,7 +46,7 @@ class LogLinearModel(object):
         # 特征权重
         self.W = np.zeros(self.D)
 
-    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, iter=10):
+    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, iter=20):
         training_data = []
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
