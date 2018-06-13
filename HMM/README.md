@@ -32,9 +32,9 @@
 config = {
     'train_data_file': './data/train.conll',   #训练集文件,大数据改为'./big-data/train.conll'
     'test_data_file': './data/test.conll',     #测试集文件,大数据改为'./big-data/test.conll'
-    										   #或者'./big-data/dev.conll'
-    'predict_file': './predict_txt'			   #模型预测结果文件
-    'alpha': 0.3 							   #平滑参数
+                                               #或者'./big-data/dev.conll'
+    'predict_file': './predict_txt',           #模型预测结果文件
+    'alpha': 0.3                               #平滑参数
 }
 ```
 
