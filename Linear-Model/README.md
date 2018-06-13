@@ -7,7 +7,7 @@
     train.conll: 训练集
     dev.conll: 开发集
 ./big-data/
-	train.conll: 训练集
+    train.conll: 训练集
     dev.conll: 开发集
     test.conll: 测试集
 ./result:
@@ -47,7 +47,7 @@ config = {
 ```bash
 $ cd ./Linear-Model
 $ python src/Linear_Model.py                   #修改config.py文件中的参数
-$ python src/Linear_Model_V2.py 			   #修改config.py文件中的参数
+$ python src/Linear_Model_V2.py                #修改config.py文件中的参数
 ```
 
 ##### 3.参考结果
