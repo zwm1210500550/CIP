@@ -1,2 +1,5 @@
 # ignore data files
 data
+
+# ignore pychche
+__pycache__

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import time
 
 import numpy as np
@@ -24,6 +25,8 @@ class LogLinearModel(object):
     def __init__(self, tags):
         # 所有不同的词性
         self.tags = tags
+        # 词性对应索引的字典
+        self.tagdict = {t: i for i, t in enumerate(tags)}
 
         self.N = len(self.tags)
 
@@ -32,7 +35,7 @@ class LogLinearModel(object):
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
-                features = self.instantialize(wordseq, i, tag)
+                features = self.instantialize(wordseq, i)
                 feature_space.update(features)
 
         # 特征空间
@@ -43,53 +46,47 @@ class LogLinearModel(object):
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros(self.D)
+        self.W = np.zeros((self.D, self.N))
+        # 累加特征权重
+        self.V = np.zeros((self.D, self.N))
 
-    def SGD(self, sentences, B=50, C=0.01, iter=40):
+    def SGD(self, sentences, batch_size=50, iter=40):
         b = 0
-        gradients = np.zeros(self.D)
+        gradients = np.zeros((self.D, self.N), dtype='float128')
         for it in range(iter):
             for sentence in sentences:
                 wordseq, tagseq = zip(*sentence)
                 # 根据单词序列的正确词性更新权重
                 for i, tag in enumerate(tagseq):
                     b += 1
-                    cor_features = self.instantialize(wordseq, i, tag)
-                    tag_features = [self.instantialize(wordseq, i, t)
-                                    for t in self.tags]
-                    scores = [self.score(features)
-                              for features in tag_features]
-                    probs = np.exp(scores) / sum(np.exp(scores))
+                    tag_index = self.tagdict[tag]
+                    features = self.instantialize(wordseq, i)
+                    scores = np.array(self.score(features))
+                    probs = np.array([1 / sum(np.exp(scores - s))
+                                      for s in scores])
 
-                    for cf in cor_features:
-                        if cf in self.feadict:
-                            gradients[self.feadict[cf]] += 1
-                    for features, p in zip(tag_features, probs):
-                        for f in features:
-                            if f in self.feadict:
-                                gradients[self.feadict[f]] -= p
-                    if b == B:
-                        # gradients -= self.W * C
+                    for f in features:
+                        if f in self.feadict:
+                            gradients[self.feadict[f]][tag_index] += 1
+                            gradients[self.feadict[f]] *= (1 - probs)
+
+                    if b == batch_size:
                         self.W += gradients
-                        gradients = np.zeros(self.D)
+                        gradients = np.zeros((self.D, self.N))
                         b = 0
-            print(self.instantialize_t)
-            print(self.score_t)
             yield it
 
     def predict(self, wordseq, index):
-        tag_features = [self.instantialize(wordseq, index, tag)
-                        for tag in self.tags]
-        scores = [self.score(features)
-                  for features in tag_features]
+        features = self.instantialize(wordseq, index)
+        scores = self.score(features)
         return self.tags[np.argmax(scores)]
 
     def score(self, features):
         scores = [self.W[self.feadict[f]]
                   for f in features if f in self.feadict]
-        return np.sum(scores)
+        return np.sum(scores, axis=0)
 
-    def instantialize(self, wordseq, index, tag):
+    def instantialize(self, wordseq, index):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else "$$"
         next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "##"
@@ -99,30 +96,30 @@ class LogLinearModel(object):
         last_char = word[-1]
 
         features = []
-        features.append(('02', tag, word))
-        features.append(('03', tag, prev_word))
-        features.append(('04', tag, next_word))
-        features.append(('05', tag, word, prev_char))
-        features.append(('06', tag, word, next_char))
-        features.append(('07', tag, first_char))
-        features.append(('08', tag, last_char))
+        features.append(('02', word))
+        features.append(('03', prev_word))
+        features.append(('04', next_word))
+        features.append(('05', word, prev_char))
+        features.append(('06', word, next_char))
+        features.append(('07', first_char))
+        features.append(('08', last_char))
 
         for char in word[1:-1]:
-            features.append(('09', tag, char))
-            features.append(('10', tag, first_char, char))
-            features.append(('11', tag, last_char, char))
+            features.append(('09', char))
+            features.append(('10', first_char, char))
+            features.append(('11', last_char, char))
         if len(word) == 1:
-            features.append(('12', tag, word, prev_char, next_char))
+            features.append(('12', word, prev_char, next_char))
         for i in range(1, len(word)):
             prev_char, char = word[i - 1], word[i]
             if prev_char == char:
-                features.append(('13', tag, char, 'consecutive'))
+                features.append(('13', char, 'consecutive'))
             if i <= 4:
-                features.append(('14', tag, word[:i]))
-                features.append(('15', tag, word[-i:]))
+                features.append(('14', word[:i]))
+                features.append(('15', word[-i:]))
         if len(word) <= 4:
-            features.append(('14', tag, word))
-            features.append(('15', tag, word))
+            features.append(('14', word))
+            features.append(('15', word))
         return features
 
     def evaluate(self, sentences):
@@ -147,21 +144,21 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    print("Creating Log-Linear Model with %d tags" % (len(tags)))
-    loglm = LogLinearModel(tags)
+    print("Creating Linear Model with %d tags" % (len(tags)))
+    lm = LogLinearModel(tags)
 
     print("Using %d sentences to create the feature space" % (len(train)))
-    loglm.create_feature_space(train)
-    print("The size of the feature space is %d" % loglm.D)
+    lm.create_feature_space(train)
+    print("The size of the feature space is %d" % lm.D)
 
     evaluations = []
 
     print("Using SGD-training algorithm to train the model")
-    for i in loglm.SGD(train):
+    for i in lm.SGD(train):
         print("iteration %d" % i)
-        result = loglm.evaluate(train)
+        result = lm.evaluate(train)
         print("\ttrain: %d / %d = %4f" % result)
-        result = loglm.evaluate(dev)
+        result = lm.evaluate(dev)
         print("\tdev: %d / %d = %4f" % result)
         evaluations.append(result)
 
