@@ -61,33 +61,33 @@ class global_liner_model(object):
             next_word = sentence[position + 1]
             next_word_first_char = sentence[position + 1][0]
 
-        template.append('01:' + '*' + pre_tag)
-        template.append('02:' + '*' + cur_word)
-        template.append('03:' + '*' + last_word)
-        template.append('04:' + '*' + next_word)
-        template.append('05:' + '*' + cur_word + '*' + last_word_last_char)
-        template.append('06:' + '*' + cur_word + '*' + next_word_first_char)
-        template.append('07:' + '*' + cur_word_first_char)
-        template.append('08:' + '*' + cur_word_last_char)
+        template.append('01:' + pre_tag)
+        template.append('02:' + cur_word)
+        template.append('03:' + last_word)
+        template.append('04:' + next_word)
+        template.append('05:' + cur_word + '*' + last_word_last_char)
+        template.append('06:' + cur_word + '*' + next_word_first_char)
+        template.append('07:' + cur_word_first_char)
+        template.append('08:' + cur_word_last_char)
 
         for i in range(1, len(sentence[position]) - 1):
-            template.append('09:' + '*' + sentence[position][i])
-            template.append('10:' + '*' + sentence[position][0] + '*' + sentence[position][i])
-            template.append('11:' + '*' + sentence[position][-1] + '*' + sentence[position][i])
+            template.append('09:' + sentence[position][i])
+            template.append('10:' + sentence[position][0] + '*' + sentence[position][i])
+            template.append('11:' + sentence[position][-1] + '*' + sentence[position][i])
             if sentence[position][i] == sentence[position][i + 1]:
-                template.append('13:' + '*' + sentence[position][i] + '*' + 'consecutive')
+                template.append('13:' + sentence[position][i] + '*' + 'consecutive')
 
         if len(sentence[position]) > 1 and sentence[position][0] == sentence[position][1]:
-            template.append('13:' + '*' + sentence[position][0] + '*' + 'consecutive')
+            template.append('13:' + sentence[position][0] + '*' + 'consecutive')
 
         if len(sentence[position]) == 1:
-            template.append('12:' + '*' + cur_word + '*' + last_word_last_char + '*' + next_word_first_char)
+            template.append('12:' + cur_word + '*' + last_word_last_char + '*' + next_word_first_char)
 
         for i in range(0, 4):
             if i > len(sentence[position]) - 1:
                 break
-            template.append('14:' + '*' + sentence[position][0:i + 1])
-            template.append('15:' + '*' + sentence[position][-(i + 1)::])
+            template.append('14:' + sentence[position][0:i + 1])
+            template.append('15:' + sentence[position][-(i + 1)::])
         return template
 
     def create_feature_space(self):
@@ -107,8 +107,8 @@ class global_liner_model(object):
                     if tag not in self.tag2id:
                         self.tag2id[tag] = len(self.tag2id)
                         self.id2tag[len(self.id2tag)] = tag
-        self.weights = np.zeros(len(self.features) * len(self.features))
-        self.v = np.zeros(len(self.features) * len(self.features))
+        self.weights = np.zeros(len(self.features) * len(self.tag2id))
+        self.v = np.zeros(len(self.features) * len(self.tag2id))
         print("the total number of features is %d" % (len(self.features)))
 
     def dot(self, feature, cur_tag, averaged=False):
@@ -140,7 +140,7 @@ class global_liner_model(object):
         # 动态规划
         for i in range(1, states):
             for j in range(type):
-                last_path = -1
+                # last_path = -1
                 cur_score = [self.score(sentence, i, self.id2tag[k], self.id2tag[j], averaged) for k in range(type)]
                 max_score[i][j] = max(cur_score + max_score[i - 1])
                 paths[i][j] = np.argmax(cur_score + max_score[i - 1])
@@ -184,6 +184,7 @@ class global_liner_model(object):
             print('using V to predict dev data')
         for iteration in range(iter):
             print('iterator: %d' % (iteration), flush=True)
+            starttime = datetime.datetime.now()
             for i in range(len(self.train_data.sentences)):
                 sentence = self.train_data.sentences[i]
                 tags = self.train_data.tags[i]
@@ -204,11 +205,15 @@ class global_liner_model(object):
                         for f in predict_feature:
                             if f in self.features:
                                 self.weights[self.features[f] + self.tag2id[predict[j]] + len(self.features)] -= 1
+
                     self.v += self.weights
+                        
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data, False)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
+            endtime = datetime.datetime.now()
+            print("iteration executing time is " + str((endtime - starttime)) + " s")
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iteration
