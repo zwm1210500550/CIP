@@ -5,7 +5,7 @@
 ```
 ./data/:
     data.conll: 数据文件
-    data.conll: 生成的毛文本文件
+    data.txt: 生成的毛文本文件
     word_dict.txt: 生成的词典文件
     out.txt: 生成的分词结果文件
 ./src:
