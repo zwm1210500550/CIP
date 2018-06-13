@@ -1,6 +1,6 @@
-# 最大匹配分词
+# Max Matching
 
-## 运行
+## Run
 
 ```sh
 $ python maxmatch.py

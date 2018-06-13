@@ -1,6 +1,6 @@
-# 隐马尔可夫模型
+# Hidden Markov Model
 
-## 运行
+## Run
 
 ```sh
 $ python hmm.py
@@ -11,3 +11,4 @@ Successfully evaluated dev data using the model
 Precision: 38113 / 50319 = 0.757428
 5.464822s elapsed
 ```
+
