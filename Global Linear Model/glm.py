@@ -52,31 +52,28 @@ class GlobalLinearModel(object):
         # 累加特征权重
         self.V = np.zeros(self.D, dtype='int')
 
-    def online(self, sentences, iter=20):
-        for it in range(iter):
+    def online(self, sentences, epochs=20):
+        for epoch in range(epochs):
             for sentence in sentences:
                 wordseq, tagseq = zip(*sentence)
                 # 根据单词序列的正确词性更新权重
                 self.update(wordseq, tagseq)
-            yield it
+            yield epoch
 
     def update(self, wordseq, tagseq):
-        # 根据现有权重向量预测词性
+        # 根据现有权重向量预测词性序列
         preseq = self.predict(wordseq)
-        # 如果预测词性与正确词性不同，则更新权重
+        # 如果预测词性序列与正确词性序列不同，则更新权重
         if tagseq != preseq:
-            prev_tag = self.BOS
-            for i, tag in enumerate(tagseq):
+            prev_tag, prev_pre = self.BOS, self.BOS
+            for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
                 for cf in self.instantialize(wordseq, i, prev_tag, tag):
                     if cf in self.feadict:
                         self.W[self.feadict[cf]] += 1
-                prev_tag = tag
-            prev_tag = self.BOS
-            for i, tag in enumerate(preseq):
-                for ef in self.instantialize(wordseq, i, prev_tag, tag):
+                for ef in self.instantialize(wordseq, i, prev_pre, pre):
                     if ef in self.feadict:
                         self.W[self.feadict[ef]] -= 1
-                prev_tag = tag
+                prev_tag, prev_pre = tag, pre
             # self.V += self.W
 
     def predict(self, wordseq, average=False):
@@ -187,7 +184,7 @@ if __name__ == '__main__':
 
     print("Using online-training algorithm to train the model")
     for i in glm.online(train):
-        print("iteration %d" % i)
+        print("Epoch %d" % i)
         result = glm.evaluate(train, average=average)
         print("\ttrain: %d / %d = %4f" % result)
         result = glm.evaluate(dev, average=average)
