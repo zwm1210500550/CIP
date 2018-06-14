@@ -1,6 +1,8 @@
 import datetime
 import numpy as np
-import sys
+import random
+
+from config import config
 
 
 class dataset(object):
@@ -31,11 +33,21 @@ class dataset(object):
         print('%s:共%d个句子,共%d个词。' % (filename, self.sentences_num, self.word_num))
         f.close()
 
+    def shuffle(self):
+        temp = [(s, t) for s, t in zip(self.sentences, self.tags)]
+        random.shuffle(temp)
+        self.sentences = []
+        self.tags = []
+        for s, t in temp:
+            self.sentences.append(s)
+            self.tags.append(t)
+
 
 class global_liner_model(object):
     def __init__(self):
-        self.train_data = dataset('./data/train.conll')
-        self.dev_data = dataset('./data/dev.conll')
+        self.train_data = dataset(train_data_file)
+        self.dev_data = dataset(dev_data_file)
+        self.test_data = dataset(test_data_file)
         self.features = {}
         self.weights = []
         self.v = []
@@ -178,12 +190,15 @@ class global_liner_model(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def train(self, iter, averaged=False):
+    def online_train(self, iteration=20, averaged=False, shuffle=False):
         max_dev_precision = 0
         if averaged:
             print('using V to predict dev data')
-        for iteration in range(iter):
-            print('iterator: %d' % (iteration), flush=True)
+        for iter in range(iteration):
+            print('iterator: %d' % (iter), flush=True)
+            if shuffle:
+                print('shuffle the train data...')
+                self.train_data.shuffle()
             starttime = datetime.datetime.now()
             for i in range(len(self.train_data.sentences)):
                 sentence = self.train_data.sentences[i]
@@ -212,26 +227,32 @@ class global_liner_model(object):
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
-            endtime = datetime.datetime.now()
-            print("iteration executing time is " + str((endtime - starttime)) + " s")
+
+            if 'test.conll' in self.test_data.filename:
+                test_correct_num, test_num, test_precision = self.evaluate(self.test_data, averaged)
+                print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
+
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
-                max_iterator = iteration
+                max_iterator = iter
                 # self.save('./result.txt')
+
+            endtime = datetime.datetime.now()
+            print("\titeration executing time is " + str((endtime - starttime)) + " s")
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2:
-        averaged = sys.argv[1]
-    else:
-        averaged = False
+    train_data_file = config['train_data_file']
+    dev_data_file = config['dev_data_file']
+    test_data_file = config['test_data_file']
+    averaged = config['averaged']
+    iterator = config['iterator']
+    shuffle = config['shuffle']
+
     starttime = datetime.datetime.now()
     model = global_liner_model()
     model.create_feature_space()
-    if averaged == 'averaged':
-        model.train(20, True)
-    else:
-        model.train(20)
+    model.online_train(iterator, averaged, shuffle)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")
