@@ -221,7 +221,7 @@ class liner_model(object):
 
             if dev_precision > (max_dev_precision):
                 max_dev_precision = dev_precision
-                max_iterator = iterator
+                max_iterator = iter
                 # self.save('./result.txt')
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision))
 

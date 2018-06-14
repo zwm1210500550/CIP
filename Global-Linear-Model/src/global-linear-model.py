@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
-import sys
+import random
+from config import config
 
 
 class dataset(object):
@@ -30,6 +31,15 @@ class dataset(object):
 
         print('%s:共%d个句子,共%d个词。' % (filename, self.sentences_num, self.word_num))
         f.close()
+
+    def shuffle(self):
+        temp = [(s, t) for s, t in zip(self.sentences, self.tags)]
+        random.shuffle(temp)
+        self.sentences = []
+        self.tags = []
+        for s, t in temp:
+            self.sentences.append(s)
+            self.tags.append(t)
 
 
 class global_liner_model(object):
@@ -177,12 +187,15 @@ class global_liner_model(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def train(self, iter, averaged=False):
+    def online_train(self, iteration=20, averaged=False, shuffle=False):
         max_dev_precision = 0
         if averaged:
             print('using V to predict dev data')
-        for iteration in range(iter):
-            print('iterator: %d' % (iteration), flush=True)
+        for iter in range(iteration):
+            print('iterator: %d' % (iter), flush=True)
+            if shuffle:
+                print('shuffle the train data...')
+                self.train_data.shuffle()
             for i in range(len(self.train_data.sentences)):
                 sentence = self.train_data.sentences[i]
                 tags = self.train_data.tags[i]
@@ -210,22 +223,22 @@ class global_liner_model(object):
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
-                max_iterator = iteration
+                max_iterator = iter
                 # self.save('./result.txt')
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2:
-        averaged = sys.argv[1]
-    else:
-        averaged = False
+    train_data_file = config['train_data_file']
+    dev_data_file = config['dev_data_file']
+    test_data_file = config['test_data_file']
+    averaged = config['averaged']
+    iterator = config['iterator']
+    shuffle = config['shuffle']
+
     starttime = datetime.datetime.now()
     model = global_liner_model()
     model.create_feature_space()
-    if averaged == 'averaged':
-        model.train(20, True)
-    else:
-        model.train(20)
+    model.online_train(iterator, averaged, shuffle)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")
