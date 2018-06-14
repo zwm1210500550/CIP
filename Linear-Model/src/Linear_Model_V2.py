@@ -40,14 +40,12 @@ class dataset(object):
         print('%s:共%d个句子,共%d个词。' % (filename, self.sentences_num, self.word_num))
         f.close()
 
-    def shuffle(self):
-        temp = [(s, t) for s, t in zip(self.sentences, self.tags)]
-        random.shuffle(temp)
-        self.sentences = []
-        self.tags = []
-        for s, t in temp:
-            self.sentences.append(s)
-            self.tags.append(s)
+    def split(self):
+        data = []
+        for i in range(len(self.sentences)):
+            for j in range(len(self.sentences[i])):
+                data.append((self.sentences[i], j, self.tags[i][j]))
+        return data
 
 
 class liner_model(object):
@@ -172,37 +170,37 @@ class liner_model(object):
         max_dev_precision = 0.0
         max_iterator = -1
         update_time = 0
+        data=self.train_data.split()
         if averaged == True:
             print('using V to predict dev data...')
         for iter in range(iterator):
             print('iterator: %d' % (iter))
             if shuffle == True:
-                self.train_data.shuffle()
+                random.shuffle(data)
                 print('\tshuffle the train data...')
-            for i in range(len(self.train_data.sentences)):
-                sentence = self.train_data.sentences[i]
-                tags = self.train_data.tags[i]
-                for j in range(len(sentence)):
-                    predict_tag = self.predict(sentence, j, False)
-                    gold_tag = tags[j]
+            for i in range(len(data)):
+                sentence = data[i][0]
+                j = data[i][1]
+                gold_tag = data[i][2]
+                predict_tag = self.predict(sentence, j, False)
+                if predict_tag != gold_tag:
+                    update_time += 1
+                    feature = self.create_feature_template(sentence, j)
+                    offset_predict_tag = self.tag_dict[predict_tag] * len(self.features)
+                    offset_gold_tag = self.tag_dict[gold_tag] * len(self.features)
 
-                    if predict_tag != gold_tag:
-                        update_time += 1
-                        feature = self.create_feature_template(sentence, j)
-                        offset_predict_tag = self.tag_dict[predict_tag] * len(self.features)
-                        offset_gold_tag = self.tag_dict[gold_tag] * len(self.features)
+                    for f in feature:
+                        if f in self.features.keys():
+                            index = self.features[f] + offset_predict_tag
+                            last_w_value = self.weights[index]
+                            self.weights[index] -= 1
+                            self.update_v(index, update_time, last_w_value)
 
-                        for f in feature:
-                            if f in self.features.keys():
-                                index = self.features[f] + offset_predict_tag
-                                last_w_value = self.weights[index]
-                                self.weights[index] -= 1
-                                self.update_v(index, update_time, last_w_value)
+                            index = self.features[f] + offset_gold_tag
+                            last_w_value = self.weights[index]
+                            self.weights[index] += 1
+                            self.update_v(index, update_time, last_w_value)
 
-                                index = self.features[f] + offset_gold_tag
-                                last_w_value = self.weights[index]
-                                self.weights[index] += 1
-                                self.update_v(index, update_time, last_w_value)
             # 本次迭代完成
             current_update_times = update_time  # 本次更新所在的次数
             for i in range(len(self.v)):
@@ -216,9 +214,10 @@ class liner_model(object):
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
+
             if 'test.conll' in self.test_data.filename:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data, averaged)
-                print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
+                print('\t' + 'train准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
 
             if dev_precision > (max_dev_precision):
                 max_dev_precision = dev_precision

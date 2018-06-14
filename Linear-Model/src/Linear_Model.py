@@ -40,14 +40,12 @@ class dataset(object):
         print('%s:共%d个句子,共%d个词。' % (filename, self.sentences_num, self.word_num))
         f.close()
 
-    def shuffle(self):
-        temp = [(s, t) for s, t in zip(self.sentences, self.tags)]
-        random.shuffle(temp)
-        self.sentences = []
-        self.tags = []
-        for s, t in temp:
-            self.sentences.append(s)
-            self.tags.append(s)
+    def split(self):
+        data = []
+        for i in range(len(self.sentences)):
+            for j in range(len(self.sentences[i])):
+                data.append((self.sentences[i], j, self.tags[i][j]))
+        return data
 
 
 class liner_model(object):
@@ -166,37 +164,39 @@ class liner_model(object):
     def online_train(self, iterator=20, averaged=False, shuffle=False):
         max_dev_precision = 0
         max_iterator = -1
+        data = self.train_data.split()
         if averaged == True:
             print('using V to predict dev data...')
         for iter in range(iterator):
             print('iterator: %d' % (iter))
             if shuffle == True:
                 print('\tshuffle the train data...')
-                self.train_data.shuffle()
-            for i in range(len(self.train_data.sentences)):
-                sentence = self.train_data.sentences[i]
-                tags = self.train_data.tags[i]
-                for j in range(len(sentence)):
-                    predict_tag = self.predict(sentence, j, False)
-                    gold_tag = tags[j]
-                    if predict_tag != gold_tag:
-                        feature_max = self.create_feature_template(sentence, predict_tag, j)
-                        feature_gold = self.create_feature_template(sentence, gold_tag, j)
-                        for f in feature_max:
-                            if f in self.features.keys():
-                                self.weights[self.features[f]] -= 1
-                        for f in feature_gold:
-                            if f in self.features.keys():
-                                self.weights[self.features[f]] += 1
-                        self.v += self.weights
+                random.shuffle(data)
+            for i in range(len(data)):
+                sentence = data[i][0]
+                j = data[i][1]
+                gold_tag = data[i][2]
+                predict_tag = self.predict(sentence, j, False)
+                if predict_tag != gold_tag:
+                    feature_max = self.create_feature_template(sentence, predict_tag, j)
+                    feature_gold = self.create_feature_template(sentence, gold_tag, j)
+                    for f in feature_max:
+                        if f in self.features.keys():
+                            self.weights[self.features[f]] -= 1
+                    for f in feature_gold:
+                        if f in self.features.keys():
+                            self.weights[self.features[f]] += 1
+                    self.v += self.weights
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data, False)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
+
             if 'test.conll' in self.test_data.filename:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data, averaged)
                 print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
+
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
