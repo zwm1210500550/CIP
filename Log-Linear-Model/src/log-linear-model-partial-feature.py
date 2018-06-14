@@ -33,14 +33,12 @@ class dataset(object):
         print('%s:共%d个句子,共%d个词。' % (filename, self.sentences_num, self.word_num))
         f.close()
 
-    def shuffle(self):
-        temp = [(s, t) for s, t in zip(self.sentences, self.tags)]
-        random.shuffle(temp)
-        self.sentences = []
-        self.tags = []
-        for s, t in temp:
-            self.sentences.append(s)
-            self.tags.append(s)
+    def split(self):
+        data = []
+        for i in range(len(self.sentences)):
+            for j in range(len(self.sentences[i])):
+                data.append((self.sentences[i], j, self.tags[i][j]))
+        return data
 
 
 class loglinear_model(object):
@@ -160,47 +158,49 @@ class loglinear_model(object):
                   C=0.0001):
         b = 0
         max_dev_precision = 0
+        data = self.train_data.split()
         for iter in range(iteration):
             print('iterator: %d' % (iter))
             if shuffle:
                 print('shuffle the train data...')
-                self.train_data.shuffle()
-            for i in range(len(self.train_data.sentences)):
-                sentence = self.train_data.sentences[i]
-                tags = self.train_data.tags[i]
-                for j in range(len(sentence)):
-                    b += 1
-                    gold_tag = tags[j]
-                    gold_feature = self.create_feature_template(sentence, j)
-                    gold_offset = self.tag_dict[gold_tag] * len(self.features)
-                    for f in gold_feature:
+                random.shuffle(data)
+            for i in range(len(data)):
+                b += 1
+
+                sentence = data[i][0]
+                j = data[i][1]
+                gold_tag = data[i][2]
+                gold_feature = self.create_feature_template(sentence, j)
+                gold_offset = self.tag_dict[gold_tag] * len(self.features)
+                for f in gold_feature:
+                    if f in self.features:
+                        self.g[self.features[f] + gold_offset] += 1
+
+                feature_list = []
+                prob_list = []
+                for tag in self.tag_dict:
+                    feature = self.create_feature_template(sentence, j)
+                    feature_list.append((feature, tag))
+                    prob_list.append(np.exp(self.dot(feature, tag)))
+                s = sum(prob_list)
+                for k in range(len(feature_list)):
+                    for f in feature_list[k][0]:
+                        offset = self.tag_dict[feature_list[k][1]] * len(self.features)
                         if f in self.features:
-                            self.g[self.features[f] + gold_offset] += 1
+                            self.g[self.features[f] + offset] -= prob_list[k] / s
 
-                    feature_list = []
-                    prob_list = []
-                    for tag in self.tag_dict:
-                        feature = self.create_feature_template(sentence, j)
-                        feature_list.append((feature, tag))
-                        prob_list.append(np.exp(self.dot(feature, tag)))
-                    s = sum(prob_list)
-                    for k in range(len(feature_list)):
-                        for f in feature_list[k][0]:
-                            offset = self.tag_dict[feature_list[k][1]] * len(self.features)
-                            if f in self.features:
-                                self.g[self.features[f] + offset] -= prob_list[k] / s
+                if b == batch_size:
+                    if step_opt:
+                        self.weights += eta * self.g
+                    else:
+                        self.weights += self.g
 
-                    if b == batch_size:
-                        if step_opt:
-                            self.weights += eta * self.g
-                        else:
-                            self.weights += self.g
+                    if regulization:
+                        self.weights -= eta * C * self.weights
+                    b = 0
+                    eta = max(eta * 0.999, 0.00001)
+                    self.g = np.zeros(len(self.features) * len(self.tag_dict))
 
-                        if regulization:
-                            self.weights -= eta * C * self.weights
-                        b = 0
-                        eta = max(eta * 0.999, 0.00001)
-                        self.g = np.zeros(len(self.features) * len(self.tag_dict))
             if b > 0:
                 if step_opt:
                     self.weights += eta * self.g
@@ -217,9 +217,11 @@ class loglinear_model(object):
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
+
             if 'test.conll' in self.test_data.filename:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data)
                 print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
+
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter

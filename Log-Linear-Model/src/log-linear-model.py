@@ -33,14 +33,12 @@ class dataset(object):
         print('%s:共%d个句子,共%d个词。' % (filename, self.sentences_num, self.word_num))
         f.close()
 
-    def shuffle(self):
-        temp = [(s, t) for s, t in zip(self.sentences, self.tags)]
-        random.shuffle(temp)
-        self.sentences = []
-        self.tags = []
-        for s, t in temp:
-            self.sentences.append(s)
-            self.tags.append(s)
+    def split(self):
+        data = []
+        for i in range(len(self.sentences)):
+            for j in range(len(self.sentences[i])):
+                data.append((self.sentences[i], j, self.tags[i][j]))
+        return data
 
 
 class loglinear_model(object):
@@ -159,44 +157,45 @@ class loglinear_model(object):
     def SGD_train(self, iteration, batch_size=50, shuffle=False, regulization=False, step_opt=False, eta=0.5, C=0.0001):
         b = 0
         max_dev_precision = 0
+        data = self.train_data.split()
         for iter in range(iteration):
             print('iterator: %d' % (iter))
             if shuffle:
                 print('shuffle the train data...')
-                self.train_data.shuffle()
-            for i in range(len(self.train_data.sentences)):
-                sentence = self.train_data.sentences[i]
-                tags = self.train_data.tags[i]
-                for j in range(len(sentence)):
-                    b += 1
-                    gold_tag = tags[j]
-                    gold_feature = self.create_feature_template(sentence, gold_tag, j)
-                    for f in gold_feature:
+                random.shuffle(data)
+            for i in range(len(data)):
+                b += 1
+                sentence = data[i][0]
+                j = data[i][1]
+                gold_tag = data[i][2]
+                gold_feature = self.create_feature_template(sentence, gold_tag, j)
+                for f in gold_feature:
+                    if f in self.features:
+                        self.g[self.features[f]] += 1
+
+                feature_list = []
+                prob_list = []
+                for tag_id in range(len(self.tag_list)):
+                    feature = self.create_feature_template(sentence, self.tag_list[tag_id], j)
+                    feature_list.append(feature)
+                    prob_list.append(np.exp(self.dot(feature)))
+                s = sum(prob_list)
+                for k in range(len(feature_list)):
+                    for f in feature_list[k]:
                         if f in self.features:
-                            self.g[self.features[f]] += 1
+                            self.g[self.features[f]] -= prob_list[k] / s
 
-                    feature_list = []
-                    prob_list = []
-                    for tag_id in range(len(self.tag_list)):
-                        feature = self.create_feature_template(sentence, self.tag_list[tag_id], j)
-                        feature_list.append(feature)
-                        prob_list.append(np.exp(self.dot(feature)))
-                    s = sum(prob_list)
-                    for k in range(len(feature_list)):
-                        for f in feature_list[k]:
-                            if f in self.features:
-                                self.g[self.features[f]] -= prob_list[k] / s
+                if b == batch_size:
+                    if step_opt:
+                        self.weights += eta * self.g
+                    else:
+                        self.weights += self.g
+                    if regulization:
+                        self.weights -= C * eta * self.weights
+                    b = 0
+                    eta = max(eta * 0.999, 0.00001)
+                    self.g = np.zeros(len(self.features))
 
-                    if b == batch_size:
-                        if step_opt:
-                            self.weights += eta * self.g
-                        else:
-                            self.weights += self.g
-                        if regulization:
-                            self.weights -= C * eta * self.weights
-                        b = 0
-                        eta = max(eta * 0.999, 0.00001)
-                        self.g = np.zeros(len(self.features))
             if b > 0:
                 if step_opt:
                     self.weights += eta * self.g
