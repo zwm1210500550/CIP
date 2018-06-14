@@ -184,8 +184,8 @@ if __name__ == '__main__':
     evaluations = []
 
     print("Using online-training algorithm to train the model")
-    for i in glm.online(train):
-        print("Epoch %d" % i)
+    for epoch in glm.online(train):
+        print("Epoch %d" % epoch)
         result = glm.evaluate(train, average=average)
         print("\ttrain: %d / %d = %4f" % result)
         result = glm.evaluate(dev, average=average)

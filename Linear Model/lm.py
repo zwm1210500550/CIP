@@ -48,14 +48,14 @@ class LinearModel(object):
         # 累加特征权重
         self.V = np.zeros(self.D, dtype='int')
 
-    def online(self, sentences, iter=20):
-        for it in range(iter):
+    def online(self, sentences, epochs=20):
+        for epoch in range(epochs):
             for sentence in sentences:
                 wordseq, tagseq = zip(*sentence)
                 # 根据单词序列的正确词性更新权重
                 for i, tag in enumerate(tagseq):
                     self.update(wordseq, i, tag)
-            yield it
+            yield epoch
 
     def update(self, wordseq, index, tag):
         # 根据现有权重向量预测词性
@@ -158,8 +158,8 @@ if __name__ == '__main__':
     evaluations = []
 
     print("Using online-training algorithm to train the model")
-    for i in lm.online(train):
-        print("iteration %d" % i)
+    for epoch in lm.online(train):
+        print("Epoch %d" % epoch)
         result = lm.evaluate(train, average=average)
         print("\ttrain: %d / %d = %4f" % result)
         result = lm.evaluate(dev, average=average)

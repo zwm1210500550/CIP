@@ -46,13 +46,13 @@ class LogLinearModel(object):
         # 特征权重
         self.W = np.zeros(self.D)
 
-    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, iter=20):
+    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, epochs=20):
         training_data = []
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
                 training_data.append((wordseq, i, tag))
-        for it in range(iter):
+        for epoch in range(epochs):
             random.shuffle(training_data)
             batches = [training_data[i:i + B]
                        for i in range(0, len(training_data), B)]
@@ -60,7 +60,7 @@ class LogLinearModel(object):
                 # 根据批次数据更新权重
                 self.update(batch, C, max(eta, 0.00001))
                 eta *= 0.999
-            yield it
+            yield epoch
 
     def update(self, batch, C, eta):
         gradients = np.zeros(self.D)
@@ -161,8 +161,8 @@ if __name__ == '__main__':
     evaluations = []
 
     print("Using SGD algorithm to train the model")
-    for i in llm.SGD(train):
-        print("iteration %d" % i)
+    for epoch in llm.SGD(train):
+        print("Epoch %d" % epoch)
         result = llm.evaluate(train)
         print("\ttrain: %d / %d = %4f" % result)
         result = llm.evaluate(dev)
