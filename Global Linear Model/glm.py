@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import random
+import sys
 import time
 
 import numpy as np
@@ -20,11 +20,13 @@ def preprocessing(ftrain):
     return sentences
 
 
-class LogLinearModel(object):
+class GlobalLinearModel(object):
 
     def __init__(self, tags):
         # 所有不同的词性
         self.tags = tags
+        # 句首词性
+        self.BOS = 'BOS'
 
         self.N = len(self.tags)
 
@@ -32,9 +34,11 @@ class LogLinearModel(object):
         feature_space = set()
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
+            prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
-                features = self.instantialize(wordseq, i, tag)
+                features = self.instantialize(wordseq, i, prev_tag, tag)
                 feature_space.update(features)
+                prev_tag = tag
 
         # 特征空间
         self.epsilon = list(feature_space)
@@ -44,56 +48,76 @@ class LogLinearModel(object):
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros(self.D)
+        self.W = np.zeros(self.D, dtype='int')
+        # 累加特征权重
+        self.V = np.zeros(self.D, dtype='int')
 
-    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, iter=20):
-        training_data = []
-        for sentence in sentences:
-            wordseq, tagseq = zip(*sentence)
-            for i, tag in enumerate(tagseq):
-                training_data.append((wordseq, i, tag))
+    def online(self, sentences, iter=20):
         for it in range(iter):
-            random.shuffle(training_data)
-            batches = [training_data[i:i + B]
-                       for i in range(0, len(training_data), B)]
-            for batch in batches:
-                # 根据批次数据更新权重
-                self.update(batch, C, max(eta, 0.00001))
-                eta *= 0.999
+            for sentence in sentences:
+                wordseq, tagseq = zip(*sentence)
+                # 根据单词序列的正确词性更新权重
+                self.update(wordseq, tagseq)
             yield it
 
-    def update(self, batch, C, eta):
-        gradients = np.zeros(self.D)
-        for wordseq, i, tag in batch:
-            for cf in self.instantialize(wordseq, i, tag):
-                if cf in self.feadict:
-                    gradients[self.feadict[cf]] += 1
-            # 获取每个词性对应的所有特征
-            tag_features = [self.instantialize(wordseq, i, t)
-                            for t in self.tags]
-            scores = [self.score(features) for features in tag_features]
-            probs = np.exp(scores) / sum(np.exp(scores))
+    def update(self, wordseq, tagseq):
+        # 根据现有权重向量预测词性
+        preseq = self.predict(wordseq)
+        # 如果预测词性与正确词性不同，则更新权重
+        if tagseq != preseq:
+            prev_tag = self.BOS
+            for i, tag in enumerate(tagseq):
+                for cf in self.instantialize(wordseq, i, prev_tag, tag):
+                    if cf in self.feadict:
+                        self.W[self.feadict[cf]] += 1
+                prev_tag = tag
+            prev_tag = self.BOS
+            for i, tag in enumerate(preseq):
+                for ef in self.instantialize(wordseq, i, prev_tag, tag):
+                    if ef in self.feadict:
+                        self.W[self.feadict[ef]] -= 1
+                prev_tag = tag
+            # self.V += self.W
 
-            for features, p in zip(tag_features, probs):
-                for f in features:
-                    if f in self.feadict:
-                        gradients[self.feadict[f]] -= p
-        self.W -= eta * C * self.W
-        self.W += eta * gradients
+    def predict(self, wordseq, average=False):
+        T = len(wordseq)
+        delta = np.zeros((T, self.N))
+        paths = np.zeros((T, self.N), dtype='int')
 
-    def predict(self, wordseq, index):
-        tag_features = [self.instantialize(wordseq, index, tag)
-                        for tag in self.tags]
-        scores = [self.score(features)
-                  for features in tag_features]
-        return self.tags[np.argmax(scores)]
+        delta[0] = [
+            self.score(self.instantialize(wordseq, 0, self.BOS, tag))
+            for tag in self.tags
+        ]
 
-    def score(self, features):
-        scores = [self.W[self.feadict[f]]
-                  for f in features if f in self.feadict]
+        for i in range(1, T):
+            for j, tag in enumerate(self.tags):
+                tag_features = [
+                    self.instantialize(wordseq, i, prev_tag, tag)
+                    for prev_tag in self.tags
+                ]
+                scores = delta[i - 1] + [self.score(fs) for fs in tag_features]
+                paths[i][j] = np.argmax(scores)
+                delta[i][j] = scores[paths[i][j]]
+        prev = np.argmax(delta[-1])
+
+        predict = [prev]
+        for i in range(T - 1, 0, -1):
+            prev = paths[i, prev]
+            predict.append(prev)
+        return [self.tags[i] for i in reversed(predict)]
+
+    def score(self, features, average=False):
+        # 计算特征对应累加权重的得分
+        if average:
+            scores = [self.V[self.feadict[f]]
+                      for f in features if f in self.feadict]
+        # 计算特征对应未累加权重的得分
+        else:
+            scores = [self.W[self.feadict[f]]
+                      for f in features if f in self.feadict]
         return np.sum(scores)
 
-    def instantialize(self, wordseq, index, tag):
+    def instantialize(self, wordseq, index, prev_tag, tag):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else "$$"
         next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "##"
@@ -103,6 +127,7 @@ class LogLinearModel(object):
         last_char = word[-1]
 
         features = []
+        features.append(('01', tag, prev_tag))
         features.append(('02', tag, word))
         features.append(('03', tag, prev_word))
         features.append(('04', tag, next_word))
@@ -129,14 +154,13 @@ class LogLinearModel(object):
             features.append(('15', tag, word))
         return features
 
-    def evaluate(self, sentences):
+    def evaluate(self, sentences, average=False):
         tp, total = 0, 0
 
         for sentence in sentences:
             total += len(sentence)
             wordseq, tagseq = zip(*sentence)
-            preseq = [self.predict(wordseq, i)
-                      for i in range(len(wordseq))]
+            preseq = self.predict(wordseq, average)
             tp += sum([t == p for t, p in zip(tagseq, preseq)])
         precision = tp / total
         return tp, total, precision
@@ -151,21 +175,22 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    print("Creating Log-Linear Model with %d tags" % (len(tags)))
-    llm = LogLinearModel(tags)
+    print("Creating Global-Linear Model with %d tags" % (len(tags)))
+    glm = GlobalLinearModel(tags)
 
     print("Using %d sentences to create the feature space" % (len(train)))
-    llm.create_feature_space(train)
-    print("The size of the feature space is %d" % llm.D)
+    glm.create_feature_space(train)
+    print("The size of the feature space is %d" % glm.D)
 
+    average = len(sys.argv) > 1 and sys.argv[1] == 'average'
     evaluations = []
 
-    print("Using SGD algorithm to train the model")
-    for i in llm.SGD(train):
+    print("Using online-training algorithm to train the model")
+    for i in glm.online(train):
         print("iteration %d" % i)
-        result = llm.evaluate(train)
+        result = glm.evaluate(train, average=average)
         print("\ttrain: %d / %d = %4f" % result)
-        result = llm.evaluate(dev)
+        result = glm.evaluate(dev, average=average)
         print("\tdev: %d / %d = %4f" % result)
         evaluations.append(result)
 
