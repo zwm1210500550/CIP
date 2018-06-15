@@ -15,6 +15,10 @@
     origin_V.txt: 初始版本，小数据测试，使用V作为权重的评价结果
     partial_feature_W: 使用部分特征优化后，小数据测试，使用W作为权重的结果
     partial_feature_V: 使用部分特征优化后，小数据测试，使用V作为权重的结果
+    big_data_origin_W.txt: 初始版本，大数据测试，使用W作为权重的评价结果
+    big_data_origin_V.txt: 初始版本，大数据测试，使用V作为权重的评价结果
+    big_data_partial_feature_W: 使用部分特征优化后，大数据测试，使用W作为权重的结果
+    big_data_partial_feature_V: 使用部分特征优化后，大数据测试，使用V作为权重的结果
 ./src:
     Linear_Model.py: 初始版本的代码
     Linear_Model.V2.py: 优化后的代码
