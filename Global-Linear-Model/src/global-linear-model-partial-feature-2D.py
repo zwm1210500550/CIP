@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 import random
+
 from config import config
 
 
@@ -54,7 +55,7 @@ class global_liner_model(object):
         self.id2tag = {}
         self.tags = []
 
-    def create_feature_template(self, sentence, position, pre_tag, cur_tag):
+    def create_feature_template(self, sentence, position, pre_tag):
         template = []
         cur_word = sentence[position]
         cur_word_first_char = cur_word[0]
@@ -73,33 +74,33 @@ class global_liner_model(object):
             next_word = sentence[position + 1]
             next_word_first_char = sentence[position + 1][0]
 
-        template.append('01:' + cur_tag + '*' + pre_tag)
-        template.append('02:' + cur_tag + '*' + cur_word)
-        template.append('03:' + cur_tag + '*' + last_word)
-        template.append('04:' + cur_tag + '*' + next_word)
-        template.append('05:' + cur_tag + '*' + cur_word + '*' + last_word_last_char)
-        template.append('06:' + cur_tag + '*' + cur_word + '*' + next_word_first_char)
-        template.append('07:' + cur_tag + '*' + cur_word_first_char)
-        template.append('08:' + cur_tag + '*' + cur_word_last_char)
+        template.append('01:' + pre_tag)
+        template.append('02:' + cur_word)
+        template.append('03:' + last_word)
+        template.append('04:' + next_word)
+        template.append('05:' + cur_word + '*' + last_word_last_char)
+        template.append('06:' + cur_word + '*' + next_word_first_char)
+        template.append('07:' + cur_word_first_char)
+        template.append('08:' + cur_word_last_char)
 
         for i in range(1, len(sentence[position]) - 1):
-            template.append('09:' + cur_tag + '*' + sentence[position][i])
-            template.append('10:' + cur_tag + '*' + sentence[position][0] + '*' + sentence[position][i])
-            template.append('11:' + cur_tag + '*' + sentence[position][-1] + '*' + sentence[position][i])
+            template.append('09:' + sentence[position][i])
+            template.append('10:' + sentence[position][0] + '*' + sentence[position][i])
+            template.append('11:' + sentence[position][-1] + '*' + sentence[position][i])
             if sentence[position][i] == sentence[position][i + 1]:
-                template.append('13:' + cur_tag + '*' + sentence[position][i] + '*' + 'consecutive')
+                template.append('13:' + sentence[position][i] + '*' + 'consecutive')
 
         if len(sentence[position]) > 1 and sentence[position][0] == sentence[position][1]:
-            template.append('13:' + cur_tag + '*' + sentence[position][0] + '*' + 'consecutive')
+            template.append('13:' + sentence[position][0] + '*' + 'consecutive')
 
         if len(sentence[position]) == 1:
-            template.append('12:' + cur_tag + '*' + cur_word + '*' + last_word_last_char + '*' + next_word_first_char)
+            template.append('12:' + cur_word + '*' + last_word_last_char + '*' + next_word_first_char)
 
         for i in range(0, 4):
             if i > len(sentence[position]) - 1:
                 break
-            template.append('14:' + cur_tag + '*' + sentence[position][0:i + 1])
-            template.append('15:' + cur_tag + '*' + sentence[position][-(i + 1)::])
+            template.append('14:' + sentence[position][0:i + 1])
+            template.append('15:' + sentence[position][-(i + 1)::])
         return template
 
     def create_feature_space(self):
@@ -111,7 +112,7 @@ class global_liner_model(object):
                     pre_tag = '^'
                 else:
                     pre_tag = tags[j - 1]
-                template = self.create_feature_template(sentence, j, pre_tag, tags[j])
+                template = self.create_feature_template(sentence, j, pre_tag)
                 for f in template:
                     if f not in self.features:
                         self.features[f] = len(self.features)
@@ -121,54 +122,45 @@ class global_liner_model(object):
         self.tags = sorted(self.tags)
         self.tag2id = {t: i for i, t in enumerate(self.tags)}
         self.id2tag = {i: t for i, t in enumerate(self.tags)}
-        self.weights = np.zeros(len(self.features))
-        self.v = np.zeros(len(self.features))
+        self.weights = np.zeros((len(self.features), len(self.tag2id)))
+        self.v = np.zeros((len(self.features), len(self.tag2id)))
         print("the total number of features is %d" % (len(self.features)))
 
-    def dot(self, feature, averaged=False):
-        score = 0
-        for f in feature:
-            if f in self.features:
-                if averaged == True:
-                    score += self.v[self.features[f]]
-                else:
-                    score += self.weights[self.features[f]]
-        return score
-
-    def score(self, sentence, position, pre_tag, cur_tag, averaged=False):
-        feature = self.create_feature_template(sentence, position, pre_tag, cur_tag)
-        return self.dot(feature, averaged)
+    def score(self, feature, averaged=False):
+        if averaged:
+            scores = [self.v[self.features[f]]
+                      for f in feature if f in self.features]
+        else:
+            scores = [self.weights[self.features[f]]
+                      for f in feature if f in self.features]
+        return np.sum(scores, axis=0)
 
     def predict(self, sentence, averaged=False):
         states = len(sentence)
         type = len(self.tag2id)
 
         max_score = np.zeros((states, type))
-        paths = np.zeros((states, type))
+        paths = np.zeros((states, type), dtype='int')
 
-        for j in range(type):
-            max_score[0][j] = self.score(sentence, 0, '^', self.id2tag[j],averaged)
-            paths[0][j] = -1
+        feature = self.create_feature_template(sentence, 0, '^')
+        max_score[0] = self.score(feature, averaged)
 
-        # 动态规划
         for i in range(1, states):
-            for j in range(type):
-                last_path = -1
-                cur_score = [self.score(sentence, i, self.id2tag[k], self.id2tag[j], averaged) for k in range(type)]
-                max_score[i][j] = max(cur_score + max_score[i - 1])
-                paths[i][j] = np.argmax(cur_score + max_score[i - 1])
+            tag_features = [
+                self.create_feature_template(sentence, i, prev_tag)
+                for prev_tag in self.tags
+            ]
+            scores = [max_score[i - 1][j] + self.score(fs, averaged)
+                      for j, fs in enumerate(tag_features)]
+            paths[i] = np.argmax(scores, axis=0)
+            max_score[i] = np.max(scores, axis=0)
+        prev = np.argmax(max_score[-1])
 
-        gold_path = []
-        cur_state = states - 1
-        step = np.argmax(max_score[cur_state])
-        gold_path.insert(0, self.id2tag[step])
-        while True:
-            step = int(paths[cur_state][step])
-            if step == -1:
-                break
-            gold_path.insert(0, self.id2tag[step])
-            cur_state -= 1
-        return gold_path
+        predict = [prev]
+        for i in range(len(sentence) - 1, 0, -1):
+            prev = paths[i, prev]
+            predict.append(prev)
+        return [self.tags[i] for i in reversed(predict)]
 
     def evaluate(self, data, averaged=False):
         total_num = 0
@@ -187,17 +179,17 @@ class global_liner_model(object):
     def online_train(self, iteration=20, averaged=False, shuffle=False):
         max_dev_precision = 0
         if averaged:
-            print('using V to predict dev data')
+            print('using V to predict dev data', flush=True)
         for iter in range(iteration):
             print('iterator: %d' % (iter), flush=True)
             if shuffle:
-                print('shuffle the train data...')
+                print('shuffle the train data...', flush=True)
                 self.train_data.shuffle()
             starttime = datetime.datetime.now()
             for i in range(len(self.train_data.sentences)):
                 sentence = self.train_data.sentences[i]
                 tags = self.train_data.tags[i]
-                predict = self.predict(sentence, averaged=False)
+                predict = self.predict(sentence, False)
                 if predict != tags:
                     for j in range(len(tags)):
                         if j == 0:
@@ -206,23 +198,25 @@ class global_liner_model(object):
                         else:
                             gold_pre_tag = tags[j - 1]
                             predict_pre_tag = predict[j - 1]
-                        gold_feature = self.create_feature_template(sentence, j, gold_pre_tag, tags[j])
-                        predict_feature = self.create_feature_template(sentence, j, predict_pre_tag, predict[j])
+                        gold_feature = self.create_feature_template(sentence, j, gold_pre_tag)
+                        predict_feature = self.create_feature_template(sentence, j, predict_pre_tag)
                         for f in gold_feature:
                             if f in self.features:
-                                self.weights[self.features[f]] += 1
+                                self.weights[self.features[f]][self.tag2id[tags[j]]] += 1
                         for f in predict_feature:
                             if f in self.features:
-                                self.weights[self.features[f]] -= 1
+                                self.weights[self.features[f]][self.tag2id[predict[j]]] -= 1
+
                     self.v += self.weights
-            train_correct_num, total_num, train_precision = self.evaluate(self.train_data, averaged=False)
+
+            train_correct_num, total_num, train_precision = self.evaluate(self.train_data, False)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
 
             if 'test.conll' in self.test_data.filename:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data, averaged)
-                print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
+                print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision), flush=True)
 
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
@@ -230,7 +224,7 @@ class global_liner_model(object):
                 # self.save('./result.txt')
 
             endtime = datetime.datetime.now()
-            print("\titeration executing time is " + str((endtime - starttime)) + " s")
+            print("\titeration executing time is " + str((endtime - starttime)) + " s", flush=True)
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 
@@ -245,6 +239,7 @@ if __name__ == '__main__':
     starttime = datetime.datetime.now()
     model = global_liner_model()
     model.create_feature_space()
+    print(model.tag2id)
     model.online_train(iterator, averaged, shuffle)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")
