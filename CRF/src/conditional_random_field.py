@@ -75,13 +75,13 @@ class conditional_random_field:
         #self.train.open_file("./data/train.conll")
         #self.train.open_file("./new_data/train_new.conll")
         #self.train.open_file("zy.txt")
-        self.train.read_data(100)
+        self.train.read_data(-1)
         self.train.close_file()
 
         self.dev.open_file("./data/dev.conll")
         #self.dev.open_file("./data/dev.conll")
         #self.dev.open_file("./new_data/dev_new.conll")
-        self.dev.read_data(10)
+        self.dev.read_data(-1)
         self.dev.close_file()
 
     """函数名称：create_bigram_feature
