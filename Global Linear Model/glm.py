@@ -74,7 +74,7 @@ class GlobalLinearModel(object):
                     if ef in self.feadict:
                         self.W[self.feadict[ef]] -= 1
                 prev_tag, prev_pre = tag, pre
-            # self.V += self.W
+            self.V += self.W
 
     def predict(self, wordseq, average=False):
         T = len(wordseq)
@@ -82,7 +82,7 @@ class GlobalLinearModel(object):
         paths = np.zeros((T, self.N), dtype='int')
 
         delta[0] = [
-            self.score(self.instantialize(wordseq, 0, self.BOS, tag))
+            self.score(self.instantialize(wordseq, 0, self.BOS, tag), average)
             for tag in self.tags
         ]
 
@@ -92,7 +92,8 @@ class GlobalLinearModel(object):
                     self.instantialize(wordseq, i, prev_tag, tag)
                     for prev_tag in self.tags
                 ]
-                scores = delta[i - 1] + [self.score(fs) for fs in tag_features]
+                scores = [self.score(fs, average) for fs in tag_features]
+                scores += delta[i - 1]
                 paths[i][j] = np.argmax(scores)
                 delta[i][j] = scores[paths[i][j]]
         prev = np.argmax(delta[-1])

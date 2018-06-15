@@ -67,7 +67,6 @@ class GlobalLinearModel(object):
         preseq = self.predict(wordseq)
         # 如果预测词性序列与正确词性序列不同，则更新权重
         if tagseq != preseq:
-
             prev_tag, prev_pre = self.BOS, self.BOS
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
                 t_index, p_index = self.tagdict[tag], self.tagdict[pre]
@@ -78,21 +77,22 @@ class GlobalLinearModel(object):
                     if ef in self.feadict:
                         self.W[self.feadict[ef]][p_index] -= 1
                 prev_tag, prev_pre = tag, pre
-            # self.V += self.W
+            self.V += self.W
 
     def predict(self, wordseq, average=False):
         T = len(wordseq)
         delta = np.zeros((T, self.N))
         paths = np.zeros((T, self.N), dtype='int')
 
-        delta[0] = self.score(self.instantialize(wordseq, 0, self.BOS))
+        features = self.instantialize(wordseq, 0, self.BOS)
+        delta[0] = self.score(features, average)
 
         for i in range(1, T):
             tag_features = [
                 self.instantialize(wordseq, i, prev_tag)
                 for prev_tag in self.tags
             ]
-            scores = [delta[i - 1][j] + self.score(fs)
+            scores = [delta[i - 1][j] + self.score(fs, average)
                       for j, fs in enumerate(tag_features)]
             paths[i] = np.argmax(scores, axis=0)
             delta[i] = np.max(scores, axis=0)
