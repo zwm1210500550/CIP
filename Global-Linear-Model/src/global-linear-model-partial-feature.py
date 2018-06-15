@@ -184,6 +184,7 @@ class global_liner_model(object):
             tags = data.tags[i]
             total_num += len(tags)
             predict = self.predict(sentence, averaged)
+
             for j in range(len(tags)):
                 if tags[j] == predict[j]:
                     correct_num += 1

@@ -147,7 +147,7 @@ class global_liner_model(object):
         paths = np.zeros((states, type))
 
         for j in range(type):
-            max_score[0][j] = self.score(sentence, 0, '^', self.id2tag[j],averaged)
+            max_score[0][j] = self.score(sentence, 0, '^', self.id2tag[j], averaged)
             paths[0][j] = -1
 
         # 动态规划
