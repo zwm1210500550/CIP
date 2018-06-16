@@ -215,7 +215,7 @@ class global_liner_model(object):
                             if f in self.features:
                                 self.weights[self.features[f]] -= 1
                     self.v += self.weights
-            train_correct_num, total_num, train_precision = self.evaluate(self.train_data, averaged=False)
+            train_correct_num, total_num, train_precision = self.evaluate(self.train_data, averaged)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
