@@ -66,7 +66,7 @@ class GlobalLinearModel(object):
         # 根据现有权重向量预测词性序列
         preseq = self.predict(wordseq)
         # 如果预测词性序列与正确词性序列不同，则更新权重
-        if tagseq != preseq:
+        if not np.array_equal(tagseq, preseq):
             prev_tag, prev_pre = self.BOS, self.BOS
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
                 t_index, p_index = self.tagdict[tag], self.tagdict[pre]
