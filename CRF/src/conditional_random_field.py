@@ -521,6 +521,8 @@ if __name__ == '__main__':
     starttime = datetime.datetime.now()
     crf = conditional_random_field()
     crf.create_feature_space()  #创建特征空间
+    print(crf.actual_tags)
+    print(crf.tags)
     crf.perceptron_online_training()  #global linear model perceptron online training
     endtime = datetime.datetime.now()
     print("executing time is "+str((endtime-starttime).seconds)+" s")
