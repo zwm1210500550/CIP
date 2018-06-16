@@ -81,21 +81,15 @@ class GlobalLinearModel(object):
         delta = np.zeros((T, self.N))
         paths = np.zeros((T, self.N), dtype='int')
 
-        delta[0] = [
-            self.score(self.instantialize(wordseq, 0, self.BOS, tag), average)
-            for tag in self.tags
-        ]
+        delta[0] = self.score(wordseq, 0, self.BOS, average)
 
         for i in range(1, T):
-            for j, tag in enumerate(self.tags):
-                tag_features = [
-                    self.instantialize(wordseq, i, prev_tag, tag)
-                    for prev_tag in self.tags
-                ]
-                scores = [self.score(fs, average) for fs in tag_features]
-                scores += delta[i - 1]
-                paths[i][j] = np.argmax(scores)
-                delta[i][j] = scores[paths[i][j]]
+            scores = np.array([
+                self.score(wordseq, i, prev_tag, average) + delta[i - 1][j]
+                for j, prev_tag in enumerate(self.tags)
+            ])
+            paths[i] = np.argmax(scores, axis=0)
+            delta[i] = scores[paths[i], np.arange(self.N)]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
@@ -104,16 +98,26 @@ class GlobalLinearModel(object):
             predict.append(prev)
         return [self.tags[i] for i in reversed(predict)]
 
-    def score(self, features, average=False):
+    def score(self, wordseq, index, prev_tag, average=False):
+        tag_features = [
+            self.instantialize(wordseq, index, prev_tag, tag)
+            for tag in self.tags
+        ]
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.V[self.feadict[f]]
-                      for f in features if f in self.feadict]
+            scores = [
+                np.sum([self.V[self.feadict[f]]
+                        for f in features if f in self.feadict])
+                for features in tag_features
+            ]
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.W[self.feadict[f]]
-                      for f in features if f in self.feadict]
-        return np.sum(scores)
+            scores = [
+                np.sum([self.W[self.feadict[f]]
+                        for f in features if f in self.feadict])
+                for features in tag_features
+            ]
+        return scores
 
     def instantialize(self, wordseq, index, prev_tag, tag):
         word = wordseq[index]

@@ -84,18 +84,15 @@ class GlobalLinearModel(object):
         delta = np.zeros((T, self.N))
         paths = np.zeros((T, self.N), dtype='int')
 
-        features = self.instantialize(wordseq, 0, self.BOS)
-        delta[0] = self.score(features, average)
+        delta[0] = self.score(wordseq, 0, self.BOS, average)
 
         for i in range(1, T):
-            tag_features = [
-                self.instantialize(wordseq, i, prev_tag)
-                for prev_tag in self.tags
-            ]
-            scores = [delta[i - 1][j] + self.score(fs, average)
-                      for j, fs in enumerate(tag_features)]
+            scores = np.array([
+                self.score(wordseq, i, prev_tag, average) + delta[i - 1][j]
+                for j, prev_tag in enumerate(self.tags)
+            ])
             paths[i] = np.argmax(scores, axis=0)
-            delta[i] = np.max(scores, axis=0)
+            delta[i] = scores[paths[i], np.arange(self.N)]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
@@ -104,7 +101,8 @@ class GlobalLinearModel(object):
             predict.append(prev)
         return [self.tags[i] for i in reversed(predict)]
 
-    def score(self, features, average=False):
+    def score(self, wordseq, index, prev_tag, average=False):
+        features = self.instantialize(wordseq, index, prev_tag)
         # 计算特征对应累加权重的得分
         if average:
             scores = [self.V[self.feadict[f]]
