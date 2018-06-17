@@ -91,8 +91,8 @@ class LinearModel(object):
 
     def instantialize(self, wordseq, index):
         word = wordseq[index]
-        prev_word = wordseq[index - 1] if index > 0 else "$$"
-        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "##"
+        prev_word = wordseq[index - 1] if index > 0 else "^^"
+        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
         prev_char = prev_word[-1]
         next_char = next_word[0]
         first_char = word[0]
