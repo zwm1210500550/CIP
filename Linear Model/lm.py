@@ -33,8 +33,8 @@ class LinearModel(object):
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
-                features = self.instantialize(wordseq, i, tag)
-                feature_space.update(features)
+                fvector = self.instantialize(wordseq, i, tag)
+                feature_space.update(fvector)
 
         # 特征空间
         self.epsilon = list(feature_space)
@@ -62,9 +62,9 @@ class LinearModel(object):
         pre = self.predict(wordseq, index)
         # 如果预测词性与正确词性不同，则更新权重
         if tag != pre:
-            cor_features = self.instantialize(wordseq, index, tag)
-            err_features = self.instantialize(wordseq, index, pre)
-            for cf, ef in zip(cor_features, err_features):
+            cfvector = self.instantialize(wordseq, index, tag)
+            efvector = self.instantialize(wordseq, index, pre)
+            for cf, ef in zip(cfvector, efvector):
                 if cf in self.feadict:
                     self.W[self.feadict[cf]] += 1
                 if ef in self.feadict:
@@ -72,21 +72,21 @@ class LinearModel(object):
             self.V += self.W
 
     def predict(self, wordseq, index, average=False):
-        tag_features = [self.instantialize(wordseq, index, tag)
-                        for tag in self.tags]
-        scores = [self.score(features, average=average)
-                  for features in tag_features]
+        fvectors = [self.instantialize(wordseq, index, tag)
+                    for tag in self.tags]
+        scores = [self.score(fvector, average=average)
+                  for fvector in fvectors]
         return self.tags[np.argmax(scores)]
 
-    def score(self, features, average=False):
+    def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
             scores = [self.V[self.feadict[f]]
-                      for f in features if f in self.feadict]
+                      for f in fvector if f in self.feadict]
         # 计算特征对应未累加权重的得分
         else:
             scores = [self.W[self.feadict[f]]
-                      for f in features if f in self.feadict]
+                      for f in fvector if f in self.feadict]
         return np.sum(scores)
 
     def instantialize(self, wordseq, index, tag):
@@ -98,32 +98,32 @@ class LinearModel(object):
         first_char = word[0]
         last_char = word[-1]
 
-        features = []
-        features.append(('02', tag, word))
-        features.append(('03', tag, prev_word))
-        features.append(('04', tag, next_word))
-        features.append(('05', tag, word, prev_char))
-        features.append(('06', tag, word, next_char))
-        features.append(('07', tag, first_char))
-        features.append(('08', tag, last_char))
+        fvector = []
+        fvector.append(('02', tag, word))
+        fvector.append(('03', tag, prev_word))
+        fvector.append(('04', tag, next_word))
+        fvector.append(('05', tag, word, prev_char))
+        fvector.append(('06', tag, word, next_char))
+        fvector.append(('07', tag, first_char))
+        fvector.append(('08', tag, last_char))
 
         for char in word[1:-1]:
-            features.append(('09', tag, char))
-            features.append(('10', tag, first_char, char))
-            features.append(('11', tag, last_char, char))
+            fvector.append(('09', tag, char))
+            fvector.append(('10', tag, first_char, char))
+            fvector.append(('11', tag, last_char, char))
         if len(word) == 1:
-            features.append(('12', tag, word, prev_char, next_char))
+            fvector.append(('12', tag, word, prev_char, next_char))
         for i in range(1, len(word)):
             prev_char, char = word[i - 1], word[i]
             if prev_char == char:
-                features.append(('13', tag, char, 'consecutive'))
+                fvector.append(('13', tag, char, 'consecutive'))
             if i <= 4:
-                features.append(('14', tag, word[:i]))
-                features.append(('15', tag, word[-i:]))
+                fvector.append(('14', tag, word[:i]))
+                fvector.append(('15', tag, word[-i:]))
         if len(word) <= 4:
-            features.append(('14', tag, word))
-            features.append(('15', tag, word))
-        return features
+            fvector.append(('14', tag, word))
+            fvector.append(('15', tag, word))
+        return fvector
 
     def evaluate(self, sentences, average=False):
         tp, total = 0, 0

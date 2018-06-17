@@ -35,8 +35,8 @@ class LogLinearModel(object):
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
-                features = self.instantialize(wordseq, i)
-                feature_space.update(features)
+                fvector = self.instantialize(wordseq, i)
+                feature_space.update(fvector)
 
         # 特征空间
         self.epsilon = list(feature_space)
@@ -69,11 +69,11 @@ class LogLinearModel(object):
         for wordseq, i, tag in batch:
             t_index = self.tagdict[tag]
 
-            features = self.instantialize(wordseq, i)
-            scores = self.score(features)
+            fvector = self.instantialize(wordseq, i)
+            scores = self.score(fvector)
             probs = np.exp(scores) / sum(np.exp(scores))
 
-            for f in features:
+            for f in fvector:
                 if f in self.feadict:
                     f_index = self.feadict[f]
                     gradients[f_index][t_index] += 1
@@ -83,13 +83,13 @@ class LogLinearModel(object):
         self.W += eta * gradients
 
     def predict(self, wordseq, index):
-        features = self.instantialize(wordseq, index)
-        scores = self.score(features)
+        fvector = self.instantialize(wordseq, index)
+        scores = self.score(fvector)
         return self.tags[np.argmax(scores)]
 
-    def score(self, features):
+    def score(self, fvector):
         scores = [self.W[self.feadict[f]]
-                  for f in features if f in self.feadict]
+                  for f in fvector if f in self.feadict]
         return np.sum(scores, axis=0)
 
     def instantialize(self, wordseq, index):
@@ -101,32 +101,32 @@ class LogLinearModel(object):
         first_char = word[0]
         last_char = word[-1]
 
-        features = []
-        features.append(('02', word))
-        features.append(('03', prev_word))
-        features.append(('04', next_word))
-        features.append(('05', word, prev_char))
-        features.append(('06', word, next_char))
-        features.append(('07', first_char))
-        features.append(('08', last_char))
+        fvector = []
+        fvector.append(('02', word))
+        fvector.append(('03', prev_word))
+        fvector.append(('04', next_word))
+        fvector.append(('05', word, prev_char))
+        fvector.append(('06', word, next_char))
+        fvector.append(('07', first_char))
+        fvector.append(('08', last_char))
 
         for char in word[1:-1]:
-            features.append(('09', char))
-            features.append(('10', first_char, char))
-            features.append(('11', last_char, char))
+            fvector.append(('09', char))
+            fvector.append(('10', first_char, char))
+            fvector.append(('11', last_char, char))
         if len(word) == 1:
-            features.append(('12', word, prev_char, next_char))
+            fvector.append(('12', word, prev_char, next_char))
         for i in range(1, len(word)):
             prev_char, char = word[i - 1], word[i]
             if prev_char == char:
-                features.append(('13', char, 'consecutive'))
+                fvector.append(('13', char, 'consecutive'))
             if i <= 4:
-                features.append(('14', word[:i]))
-                features.append(('15', word[-i:]))
+                fvector.append(('14', word[:i]))
+                fvector.append(('15', word[-i:]))
         if len(word) <= 4:
-            features.append(('14', word))
-            features.append(('15', word))
-        return features
+            fvector.append(('14', word))
+            fvector.append(('15', word))
+        return fvector
 
     def evaluate(self, sentences):
         tp, total = 0, 0
