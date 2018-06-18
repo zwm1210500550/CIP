@@ -128,17 +128,9 @@ class loglinear_model(object):
         return score
 
     def predict(self, sentence, position):
-        probilitys = []
-        for tag in self.tag_list:
-            template = self.create_feature_template(sentence, position)
-            cur_score = np.exp(self.dot(template, tag))
-            probilitys.append(cur_score)
-
-        s = sum(probilitys)
-        for i in range(len(probilitys)):
-            probilitys[i] /= s
-
-        return self.tag_list[np.argmax(probilitys)]
+        feature = self.create_feature_template(sentence, position)
+        scores = [self.dot(feature, tag) for tag in self.tag_list]
+        return self.tag_list[np.argmax(scores)]
 
     def evaluate(self, data):
         total_num = 0
@@ -161,6 +153,7 @@ class loglinear_model(object):
         data = self.train_data.split()
         for iter in range(iteration):
             print('iterator: %d' % (iter))
+            starttime = datetime.datetime.now()
             if shuffle:
                 print('shuffle the train data...')
                 random.shuffle(data)
@@ -176,18 +169,15 @@ class loglinear_model(object):
                     if f in self.features:
                         self.g[self.features[f] + gold_offset] += 1
 
-                feature_list = []
-                prob_list = []
-                for tag in self.tag_dict:
-                    feature = self.create_feature_template(sentence, j)
-                    feature_list.append((feature, tag))
-                    prob_list.append(np.exp(self.dot(feature, tag)))
-                s = sum(prob_list)
-                for k in range(len(feature_list)):
-                    for f in feature_list[k][0]:
-                        offset = self.tag_dict[feature_list[k][1]] * len(self.features)
+                template = self.create_feature_template(sentence, j)
+                scores = [self.dot(template, t) for t in self.tag_list]
+                prob_list = np.exp(scores) / sum(np.exp(scores))
+
+                for k in range(len(prob_list)):
+                    offset = k * len(self.features)
+                    for f in template:
                         if f in self.features:
-                            self.g[self.features[f] + offset] -= prob_list[k] / s
+                            self.g[self.features[f] + offset] -= prob_list[k]
 
                 if b == batch_size:
                     if step_opt:
@@ -225,6 +215,8 @@ class loglinear_model(object):
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
+            endtime = datetime.datetime.now()
+            print("\titeration executing time is " + str((endtime - starttime).seconds) + " s")
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 

@@ -128,17 +128,9 @@ class loglinear_model(object):
         return score
 
     def predict(self, sentence, position):
-        probilitys = []
-        for tag in self.tag_list:
-            template = self.create_feature_template(sentence, tag, position)
-            cur_score = np.exp(self.dot(template))
-            probilitys.append(cur_score)
-
-        s = sum(probilitys)
-        for i in range(len(probilitys)):
-            probilitys[i] /= s
-
-        return self.tag_list[np.argmax(probilitys)]
+        fvectors = [self.create_feature_template(sentence, tag, position) for tag in self.tag_list]
+        scores = [self.dot(template) for template in fvectors]
+        return self.tag_list[np.argmax(scores)]
 
     def evaluate(self, data):
         total_num = 0
@@ -174,17 +166,14 @@ class loglinear_model(object):
                     if f in self.features:
                         self.g[self.features[f]] += 1
 
-                feature_list = []
-                prob_list = []
-                for tag_id in range(len(self.tag_list)):
-                    feature = self.create_feature_template(sentence, self.tag_list[tag_id], j)
-                    feature_list.append(feature)
-                    prob_list.append(np.exp(self.dot(feature)))
-                s = sum(prob_list)
-                for k in range(len(feature_list)):
-                    for f in feature_list[k]:
+                feature_list = [self.create_feature_template(sentence, tag, j) for tag in self.tag_list]
+                scores = [self.dot(template) for template in feature_list]
+                prob_list = np.exp(scores) / sum(np.exp(scores))
+
+                for template, p in zip(feature_list, prob_list):
+                    for f in template:
                         if f in self.features:
-                            self.g[self.features[f]] -= prob_list[k] / s
+                            self.g[self.features[f]] -= p
 
                 if b == batch_size:
                     if step_opt:
