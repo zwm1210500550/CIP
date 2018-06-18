@@ -30,7 +30,7 @@ class dataset(object):
         self.sentences_num = len(self.sentences)
         self.word_num = word_num
 
-        print('%s:共%d个句子,共%d个词。' % (filename, self.sentences_num, self.word_num))
+        print('%s:共%d个句子,共%d个词。' % (filename, self.sentences_num, self.word_num), flush=True)
         f.close()
 
     def split(self):
@@ -152,14 +152,14 @@ class loglinear_model(object):
         max_dev_precision = 0
         data = self.train_data.split()
         if regulization:
-            print('add regulization...C=%f' % (C))
+            print('add regulization...C=%f' % (C), flush=True)
         if step_opt:
-            print('add step optimization...eta=%f' % (eta))
+            print('add step optimization...eta=%f' % (eta), flush=True)
         for iter in range(iteration):
-            print('iterator: %d' % (iter))
+            print('iterator: %d' % (iter), flush=True)
             starttime = datetime.datetime.now()
             if shuffle:
-                print('shuffle the train data...')
+                print('shuffle the train data...', flush=True)
                 random.shuffle(data)
             for i in range(len(data)):
                 b += 1
@@ -208,19 +208,19 @@ class loglinear_model(object):
                 self.g = np.zeros(len(self.features) * len(self.tag_dict))
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
-            print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
+            print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
 
             if 'test.conll' in self.test_data.filename:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data)
-                print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
+                print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision), flush=True)
 
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
             endtime = datetime.datetime.now()
-            print("\titeration executing time is " + str((endtime - starttime).seconds) + " s")
+            print("\titeration executing time is " + str((endtime - starttime).seconds) + " s", flush=True)
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 
