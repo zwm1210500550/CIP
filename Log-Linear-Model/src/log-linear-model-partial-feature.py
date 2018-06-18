@@ -152,9 +152,9 @@ class loglinear_model(object):
         max_dev_precision = 0
         data = self.train_data.split()
         if regulization:
-            print('add regulization...')
+            print('add regulization...C=%f' % (C))
         if step_opt:
-            print('add step optimization...')
+            print('add step optimization...eta=%f' % (eta))
         for iter in range(iteration):
             print('iterator: %d' % (iter))
             starttime = datetime.datetime.now()
