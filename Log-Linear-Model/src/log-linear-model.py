@@ -160,6 +160,7 @@ class loglinear_model(object):
         data = self.train_data.split()
         for iter in range(iteration):
             print('iterator: %d' % (iter))
+            starttime = datetime.datetime.now()
             if shuffle:
                 print('shuffle the train data...')
                 random.shuffle(data)
@@ -217,6 +218,8 @@ class loglinear_model(object):
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
+            endtime = datetime.datetime.now()
+            print("\titeration executing time is " + str((endtime - starttime).seconds) + " s")
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 
