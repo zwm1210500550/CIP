@@ -1,7 +1,5 @@
-#Linear model
-
-
-##一、目录文件
+# Linear model
+## 一、目录文件
     ./data/:
         train.conll: 训练集
         dev.conll: 开发集
@@ -21,10 +19,10 @@
         config.py: 配置文件，用字典存储每个参数
     ./README.md: 使用说明
 
-##二、运行
-###1.运行环境
+## 二、运行
+### 1.运行环境
     python 3
-###2.运行方法
+### 2.运行方法
     #配置文件中各个参数
     config = {
         'train_data_file': './big-data/train.conll',   #训练集文件
@@ -37,8 +35,8 @@
     $ cd ./Linear Model
     $ python3 src/linear-model.py                   #执行初始版本
     $ python3 src/linear-model_v2.py                #执行特征提取优化版本
-###3.参考结果
-####(1)小数据测试
+### 3.参考结果
+#### (1)小数据测试
 
 ```
 训练集：data/train.conll
