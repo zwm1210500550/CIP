@@ -1,7 +1,6 @@
 import datetime
 import numpy as np
 import random
-
 from config import config
 
 
@@ -57,7 +56,7 @@ class CRF(object):
         self.EOS = 'EOS'
         self.BOS = 'BOS'
 
-    def create_feature_template(self, sentence, position, pre_tag, cur_tag):
+    def create_feature_template(self, sentence, position, pre_tag):
         template = []
         cur_word = sentence[position]
         cur_word_first_char = cur_word[0]
@@ -76,33 +75,33 @@ class CRF(object):
             next_word = sentence[position + 1]
             next_word_first_char = sentence[position + 1][0]
 
-        template.append('01:' + cur_tag + '*' + pre_tag)
-        template.append('02:' + cur_tag + '*' + cur_word)
-        template.append('03:' + cur_tag + '*' + last_word)
-        template.append('04:' + cur_tag + '*' + next_word)
-        template.append('05:' + cur_tag + '*' + cur_word + '*' + last_word_last_char)
-        template.append('06:' + cur_tag + '*' + cur_word + '*' + next_word_first_char)
-        template.append('07:' + cur_tag + '*' + cur_word_first_char)
-        template.append('08:' + cur_tag + '*' + cur_word_last_char)
+        template.append('01:' + pre_tag)
+        template.append('02:' + cur_word)
+        template.append('03:' + last_word)
+        template.append('04:' + next_word)
+        template.append('05:' + cur_word + '*' + last_word_last_char)
+        template.append('06:' + cur_word + '*' + next_word_first_char)
+        template.append('07:' + cur_word_first_char)
+        template.append('08:' + cur_word_last_char)
 
         for i in range(1, len(sentence[position]) - 1):
-            template.append('09:' + cur_tag + '*' + sentence[position][i])
-            template.append('10:' + cur_tag + '*' + sentence[position][0] + '*' + sentence[position][i])
-            template.append('11:' + cur_tag + '*' + sentence[position][-1] + '*' + sentence[position][i])
+            template.append('09:' + sentence[position][i])
+            template.append('10:' + sentence[position][0] + '*' + sentence[position][i])
+            template.append('11:' + sentence[position][-1] + '*' + sentence[position][i])
             if sentence[position][i] == sentence[position][i + 1]:
-                template.append('13:' + cur_tag + '*' + sentence[position][i] + '*' + 'consecutive')
+                template.append('13:' + sentence[position][i] + '*' + 'consecutive')
 
         if len(sentence[position]) > 1 and sentence[position][0] == sentence[position][1]:
-            template.append('13:' + cur_tag + '*' + sentence[position][0] + '*' + 'consecutive')
+            template.append('13:' + sentence[position][0] + '*' + 'consecutive')
 
         if len(sentence[position]) == 1:
-            template.append('12:' + cur_tag + '*' + cur_word + '*' + last_word_last_char + '*' + next_word_first_char)
+            template.append('12:' + cur_word + '*' + last_word_last_char + '*' + next_word_first_char)
 
         for i in range(0, 4):
             if i > len(sentence[position]) - 1:
                 break
-            template.append('14:' + cur_tag + '*' + sentence[position][0:i + 1])
-            template.append('15:' + cur_tag + '*' + sentence[position][-(i + 1)::])
+            template.append('14:' + sentence[position][0:i + 1])
+            template.append('15:' + sentence[position][-(i + 1)::])
         return template
 
     def create_feature_space(self):
@@ -114,7 +113,7 @@ class CRF(object):
                     pre_tag = self.BOS
                 else:
                     pre_tag = tags[j - 1]
-                template = self.create_feature_template(sentence, j, pre_tag, tags[j])
+                template = self.create_feature_template(sentence, j, pre_tag)
                 for f in template:
                     if f not in self.features:
                         self.features[f] = len(self.features)
@@ -122,50 +121,44 @@ class CRF(object):
                     if tag not in self.tags:
                         self.tags.append(tag)
         self.tags = sorted(self.tags)
+        # self.tags.append(self.EOS)
         self.tag2id = {t: i for i, t in enumerate(self.tags)}
         self.id2tag = {i: t for i, t in enumerate(self.tags)}
-        self.weights = np.zeros(len(self.features))
-        self.g = np.zeros(len(self.features))
+        self.weights = np.zeros((len(self.features), len(self.tag2id)))
+        self.g = np.zeros((len(self.features), len(self.tag2id)))
         print("the total number of features is %d" % (len(self.features)))
 
     def score(self, feature):
-        score = 0
-        for f in feature:
-            if f in self.features:
-                score += self.weights[self.features[f]]
-        return score
+        scores = [self.weights[self.features[f]]
+                  for f in feature if f in self.features]
+        return np.sum(scores, axis=0)
 
     def predict(self, sentence):
         states = len(sentence)
         type = len(self.tag2id)
 
         max_score = np.zeros((states, type))
-        paths = np.zeros((states, type))
+        paths = np.zeros((states, type), dtype='int')
 
-        for j in range(type):
-            feature = self.create_feature_template(sentence, 0, self.BOS, self.tags[j])
-            max_score[0][j] = self.score(feature)
-            paths[0][j] = -1
+        feature = self.create_feature_template(sentence, 0, self.BOS)
+        max_score[0] = self.score(feature)
 
-        # 动态规划
         for i in range(1, states):
-            for j in range(type):
-                features = [self.create_feature_template(sentence, i, tag, self.tags[j]) for tag in self.tags]
-                cur_score = [self.score(feature) for feature in features]
-                max_score[i][j] = max(cur_score + max_score[i - 1])
-                paths[i][j] = np.argmax(cur_score + max_score[i - 1])
+            tag_features = [
+                self.create_feature_template(sentence, i, prev_tag)
+                for prev_tag in self.tags
+            ]
+            scores = [max_score[i - 1][j] + self.score(fs)
+                      for j, fs in enumerate(tag_features)]
+            paths[i] = np.argmax(scores, axis=0)
+            max_score[i] = np.max(scores, axis=0)
+        prev = np.argmax(max_score[-1])
 
-        gold_path = []
-        cur_state = states - 1
-        step = np.argmax(max_score[cur_state])
-        gold_path.insert(0, self.id2tag[step])
-        while True:
-            step = int(paths[cur_state][step])
-            if step == -1:
-                break
-            gold_path.insert(0, self.id2tag[step])
-            cur_state -= 1
-        return gold_path
+        predict = [prev]
+        for i in range(len(sentence) - 1, 0, -1):
+            prev = paths[i, prev]
+            predict.append(prev)
+        return [self.tags[i] for i in reversed(predict)]
 
     def evaluate(self, data):
         total_num = 0
@@ -181,32 +174,99 @@ class CRF(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def logsumexp(self, scores):
-        s_max = np.max(scores)
-        return s_max + np.log(np.exp(scores - s_max).sum())
-
-    def forward(self, sentence):
-        path_scores = np.zeros((len(sentence), len(self.tags)))
-
-        features = [self.create_feature_template(sentence, 0, self.BOS, tag) for tag in self.tags]
-        path_scores[0] = [self.score(feature) for feature in features]
+    def forward_all(self, sentence):
+        scores = np.zeros((len(sentence), len(self.tags)))
+        feature = self.create_feature_template(sentence, 0, self.BOS)
+        scores[0] = np.exp(self.score(feature))
 
         for i in range(1, len(sentence)):
-            for j in range(len(self.tags)):
-                features = [self.create_feature_template(sentence, i, pre_tag, self.tags[j]) for pre_tag in self.tags]
-                scores = [self.score(feature) for feature in features]
-                path_scores[i][j] = self.logsumexp(path_scores[i - 1] + scores)
-        return path_scores
+            tag_features = [self.create_feature_template(sentence, i, pre_tag) for pre_tag in self.tags]
+            score = [scores[i - 1][j] * np.exp(self.score(fs)) for j, fs in enumerate(tag_features)]
+            scores[i] = np.sum(score, axis=0)
 
-    def backward(self, sentence):
-        path_scores = np.zeros((len(sentence), len(self.tags)))
+        return scores
 
-        for i in reversed(range(len(sentence) - 1)):
-            for j in range(len(self.tags)):
-                features = [self.create_feature_template(sentence, i + 1, self.tags[j], tag) for tag in self.tags]
-                scores = [self.score(feature) for feature in features]
-                path_scores[i][j] = self.logsumexp(path_scores[i + 1] + scores)
-        return path_scores
+    def forward(self, sentence, position, curtag):
+        if position < -1 or position > len(sentence):
+            print('forward 参数有误!')
+            return 0
+        if position == -1:
+            if curtag == self.BOS:
+                return 1
+            else:
+                print('forward 参数有误!')
+                return 0
+
+        if position == len(sentence):
+            scores = np.zeros((position, len(self.tags)))
+        else:
+            scores = np.zeros((position + 1, len(self.tags)))
+        feature = self.create_feature_template(sentence, 0, self.BOS)
+        scores[0] = np.exp(self.score(feature))
+
+        for i in range(1, position + 1):
+            if i == len(sentence):
+                if curtag == self.EOS:
+                    return sum(scores[-1])
+                else:
+                    print('forward 参数有误!')
+                    return 0
+            tag_features = [self.create_feature_template(sentence, i, pre_tag) for pre_tag in self.tags]
+            score = [scores[i - 1][j] * np.exp(self.score(fs)) for j, fs in enumerate(tag_features)]
+            scores[i] = np.sum(score, axis=0)
+
+        if curtag not in self.tag2id:
+            print('forward 参数有误!')
+            return 0
+        return scores[position][self.tag2id[curtag]]
+
+    def backward_all(self, sentence):
+        states = len(sentence)
+        scores = np.zeros((states, len(self.tags)))
+
+        scores[-1] = np.zeros(len(self.tags)) + 1
+
+        for i in range(states - 2, -1, -1):
+            tag_features = [self.create_feature_template(sentence, i + 1, pre_tag) for pre_tag in self.tags]
+            score = [scores[i + 1] * np.exp(self.score(fs)) for j, fs in enumerate(tag_features)]
+            scores[i] = np.sum(score, axis=1)
+
+        return scores
+
+    def backward(self, sentence, position, curtag):
+        if position < -1 or position > len(sentence):
+            print('backward 参数有误!')
+            return 0
+        if position == len(sentence):
+            if curtag == self.EOS:
+                return 1
+            else:
+                print('backword 参数有误!')
+                return 0
+
+        states = len(sentence) if position == -1 else len(sentence) - position
+        scores = np.zeros((states, len(self.tags)))
+
+        scores[-1] = np.zeros(len(self.tags)) + 1
+
+        for i in range(states - 2, -1, -1):
+            tag_features = [self.create_feature_template(sentence, i + 1, pre_tag) for pre_tag in self.tags]
+            score = [scores[i + 1] * np.exp(self.score(fs)) for j, fs in enumerate(tag_features)]
+            scores[i] = np.sum(score, axis=1)
+
+        if position == -1:
+            start_feature = self.create_feature_template(sentence, 0, self.BOS)
+            score = np.exp(self.score(start_feature))
+            if curtag == self.BOS:
+                return sum([i * j for i, j in zip(scores[0], score)])
+            else:
+                print('backword 参数有误!')
+                return 0
+
+        if curtag not in self.tag2id:
+            print('backword 参数有误!')
+            return 0
+        return scores[0][self.tag2id[curtag]]
 
     def update_gradient(self, sentence, tags):
         for i in range(len(sentence)):
@@ -215,43 +275,44 @@ class CRF(object):
             else:
                 pre_tag = tags[i - 1]
             cur_tag = tags[i]
-            feature = self.create_feature_template(sentence, i, pre_tag, cur_tag)
+            feature = self.create_feature_template(sentence, i, pre_tag)
             for f in feature:
                 if f in self.features:
-                    self.g[self.features[f]] += 1
+                    self.g[self.features[f]][self.tag2id[cur_tag]] += 1
 
-        forward_scores = self.forward(sentence)
-        backward_scores = self.backward(sentence)
-        dinominator = self.logsumexp(forward_scores[-1])
+        dinominator = self.forward(sentence, len(sentence), self.EOS)  # 得到分母Z(S)
+        forward_scores = self.forward_all(sentence)
+        backward_scores = self.backward_all(sentence)
 
         for i in range(len(sentence)):
             if i == 0:
                 pre_tag = self.BOS
+                template = self.create_feature_template(sentence, i, pre_tag)
+                score = np.exp(self.score(template))
                 for cur_tag in self.tags:
-                    template = self.create_feature_template(sentence, i, pre_tag, cur_tag)
-                    score = self.score(template)
-                    forward = 0
+                    forward = 1
                     backward = backward_scores[i][self.tag2id[cur_tag]]
-                    p = np.exp(forward + score + backward - dinominator)
+                    p = forward * score[self.tag2id[cur_tag]] * backward / dinominator
 
                     for f in template:
                         if f in self.features:
-                            self.g[self.features[f]] -= p
+                            self.g[self.features[f]][self.tag2id[cur_tag]] -= p
             else:
                 for pre_tag in self.tags:
+                    template = self.create_feature_template(sentence, i, pre_tag)
+                    score = np.exp(self.score(template))
                     for cur_tag in self.tags:
-                        template = self.create_feature_template(sentence, i, pre_tag, cur_tag)
-                        score = self.score(template)
                         forward = forward_scores[i - 1][self.tag2id[pre_tag]]
                         backward = backward_scores[i][self.tag2id[cur_tag]]
-                        p = np.exp(forward + score + backward - dinominator)
+                        p = forward * score[self.tag2id[cur_tag]] * backward / dinominator
 
                         for f in template:
                             if f in self.features:
-                                self.g[self.features[f]] -= p
+                                self.g[self.features[f]][self.tag2id[cur_tag]] -= p
 
     def SGD_train(self, iteration=20, batchsize=1, shuffle=False):
         max_dev_precision = 0
+        b = 0
         for iter in range(iteration):
             b = 0
             starttime = datetime.datetime.now()
@@ -268,12 +329,12 @@ class CRF(object):
                 self.update_gradient(sentence, tags)
                 if b == batchsize:
                     self.weights += self.g
-                    self.g = np.zeros(len(self.features))
+                    self.g = np.zeros((len(self.features), len(self.tag2id)))
                     b = 0
 
             if b > 0:
                 self.weights += self.g
-                self.g = np.zeros(len(self.features))
+                self.g = np.zeros((len(self.features), len(self.tag2id)))
                 b = 0
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
@@ -307,6 +368,8 @@ if __name__ == '__main__':
     crf.create_feature_space()
     print(crf.tag2id)
     crf.SGD_train(iterator, batchsize, shuffle)
-    # print(crf.forward(['你', '好', '啊']))
+
+    # print(crf.forward(['你', '好', '啊'], 3, crf.EOS))
+    # print(crf.backward(['你', '好', '啊'], -1, crf.BOS))
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")
