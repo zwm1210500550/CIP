@@ -3,6 +3,7 @@
 import time
 
 import numpy as np
+from scipy.misc import logsumexp
 
 
 def preprocess(fdata):
@@ -89,7 +90,7 @@ class CRF(object):
                 for j, tag in enumerate(self.tags):
                     fvectors = [self.instantiate(wordseq, i, prev_tag, tag)
                                 for prev_tag in self.tags]
-                    scores = [self.score(fvector) for fvector in fvectors]
+                    scores = [self.score(fv) for fv in fvectors]
                     probs = np.exp(scores + alpha[i - 1] + beta[i, j] - logZ)
 
                     for fvector, p in zip(fvectors, probs):
@@ -106,13 +107,13 @@ class CRF(object):
 
         fvectors = [self.instantiate(wordseq, 0, self.BOS, tag)
                     for tag in self.tags]
-        alpha[0] = [self.score(fvector) for fvector in fvectors]
+        alpha[0] = [self.score(fv) for fv in fvectors]
 
         for i in range(1, T):
             for j, tag in enumerate(self.tags):
                 fvectors = [self.instantiate(wordseq, i, prev_tag, tag)
                             for prev_tag in self.tags]
-                scores = [self.score(fvector) for fvector in fvectors]
+                scores = [self.score(fv) for fv in fvectors]
                 alpha[i][j] = self.logsumexp(alpha[i - 1] + scores)
         return alpha
 
@@ -124,7 +125,7 @@ class CRF(object):
             for j, prev_tag in enumerate(self.tags):
                 fvectors = [self.instantiate(wordseq, i + 1, prev_tag, tag)
                             for tag in self.tags]
-                scores = [self.score(fvector) for fvector in fvectors]
+                scores = [self.score(fv) for fv in fvectors]
                 beta[i][j] = self.logsumexp(beta[i + 1] + scores)
         return beta
 
@@ -135,14 +136,13 @@ class CRF(object):
 
         fvectors = [self.instantiate(wordseq, 0, self.BOS, tag)
                     for tag in self.tags]
-        delta[0] = [self.score(fvector) for fvector in fvectors]
+        delta[0] = [self.score(fv) for fv in fvectors]
 
         for i in range(1, T):
             for j, tag in enumerate(self.tags):
                 fvectors = [self.instantiate(wordseq, i, prev_tag, tag)
                             for prev_tag in self.tags]
-                scores = [self.score(fvector)
-                          for fvector in fvectors] + delta[i - 1]
+                scores = [self.score(fv) for fv in fvectors] + delta[i - 1]
                 paths[i][j] = np.argmax(scores)
                 delta[i][j] = scores[paths[i][j]]
         prev = np.argmax(delta[-1])
@@ -157,10 +157,6 @@ class CRF(object):
         scores = [self.W[self.fdict[f]]
                   for f in fvector if f in self.fdict]
         return np.sum(scores)
-
-    def logsumexp(self, scores):
-        s_max = np.max(scores)
-        return s_max + np.log(np.exp(scores - s_max).sum())
 
     def instantiate(self, wordseq, index, prev_tag, tag):
         word = wordseq[index]

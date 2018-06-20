@@ -3,6 +3,7 @@
 import time
 
 import numpy as np
+from scipy.misc import logsumexp
 
 
 def preprocess(fdata):
@@ -78,26 +79,27 @@ class CRF(object):
 
             alpha = self.forward(wordseq)
             beta = self.backward(wordseq)
-            logZ = self.logsumexp(alpha[-1])
+            logZ = logsumexp(alpha[-1])
             # print(logZ, self.logsumexp(
             #     beta[0] + self.score(self.instantiate(wordseq, 0, self.BOS))))
 
             fvector = self.instantiate(wordseq, 0, self.BOS)
-            probs = np.exp(self.score(fvector) + beta[0] - logZ)
+            p = np.exp(self.score(fvector) + beta[0] - logZ)
             for f in fvector:
                 if f in self.fdict:
-                    gradients[self.fdict[f]] -= probs
+                    gradients[self.fdict[f]] -= p
 
             for i in range(1, len(tagseq)):
-                for j, prev_tag in enumerate(self.tags):
-                    fvector = self.instantiate(wordseq, i, prev_tag)
-                    probs = np.exp(self.score(fvector) +
-                                   alpha[i - 1, j] + beta[i] - logZ)
-                    for f in fvector:
+                fvectors = [self.instantiate(wordseq, i, prev_tag)
+                            for prev_tag in self.tags]
+                for j, fv in enumerate(fvectors):
+                    score = self.score(fv)
+                    p = np.exp(score + alpha[i - 1, j] + beta[i] - logZ)
+                    for f in fv:
                         if f in self.fdict:
-                            gradients[self.fdict[f]] -= probs
+                            gradients[self.fdict[f]] -= p
 
-        # self.W -= eta * c * self.W
+        self.W -= c * self.W
         self.W += gradients
 
     def forward(self, wordseq):
@@ -110,9 +112,8 @@ class CRF(object):
         for i in range(1, T):
             fvectors = [self.instantiate(wordseq, i, prev_tag)
                         for prev_tag in self.tags]
-            scores = np.array([self.score(fvector) for fvector in fvectors])
-            alpha[i] = [self.logsumexp(scores[:, j] + alpha[i - 1])
-                        for j in range(self.N)]
+            scores = np.column_stack([self.score(fv) for fv in fvectors])
+            alpha[i] = logsumexp(scores + alpha[i - 1], axis=1)
         return alpha
 
     def backward(self, wordseq):
@@ -122,9 +123,8 @@ class CRF(object):
         for i in reversed(range(T - 1)):
             fvectors = [self.instantiate(wordseq, i + 1, prev_tag)
                         for prev_tag in self.tags]
-            scores = np.array([self.score(fvector) for fvector in fvectors])
-            beta[i] = [self.logsumexp(scores[j] + beta[i + 1])
-                       for j in range(self.N)]
+            scores = np.array([self.score(fv) for fv in fvectors])
+            beta[i] = logsumexp(scores + beta[i + 1], axis=1)
         return beta
 
     def predict(self, wordseq):
@@ -138,8 +138,8 @@ class CRF(object):
         for i in range(1, T):
             fvectors = [self.instantiate(wordseq, i, prev_tag)
                         for prev_tag in self.tags]
-            scores = np.array([delta[i - 1][j] + self.score(fvector)
-                               for j, fvector in enumerate(fvectors)])
+            scores = np.array([delta[i - 1][j] + self.score(fv)
+                               for j, fv in enumerate(fvectors)])
             paths[i] = np.argmax(scores, axis=0)
             delta[i] = scores[paths[i], np.arange(self.N)]
         prev = np.argmax(delta[-1])
@@ -154,10 +154,6 @@ class CRF(object):
         scores = [self.W[self.fdict[f]]
                   for f in fvector if f in self.fdict]
         return np.sum(scores, axis=0)
-
-    def logsumexp(self, scores):
-        s_max = np.max(scores)
-        return s_max + np.log(np.exp(scores - s_max).sum())
 
     def instantiate(self, wordseq, index, prev_tag):
         word = wordseq[index]
