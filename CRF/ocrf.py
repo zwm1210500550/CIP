@@ -28,6 +28,8 @@ class CRF(object):
         self.BOS = 'BOS'
         # 句尾词性
         self.EOS = 'EOS'
+        # 词性对应索引的字典
+        self.tdict = {t: i for i, t in enumerate(tags)}
 
         self.N = len(self.tags)
 
@@ -37,7 +39,7 @@ class CRF(object):
             wordseq, tagseq = zip(*sentence)
             prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
-                fvector = self.instantiate(wordseq, i, prev_tag, tag)
+                fvector = self.instantiate(wordseq, i, prev_tag)
                 feature_space.update(fvector)
                 prev_tag = tag
 
@@ -49,7 +51,7 @@ class CRF(object):
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros(self.D)
+        self.W = np.zeros((self.D, self.N))
 
     def SGD(self, sentences, batch_size=1, c=0.0001, eta=1, epochs=20):
         for epoch in range(epochs):
@@ -63,57 +65,54 @@ class CRF(object):
             yield epoch
 
     def update(self, batch, c, eta):
-        gradients = np.zeros(self.D)
+        gradients = np.zeros((self.D, self.N))
         for sentence in batch:
             wordseq, tagseq = zip(*sentence)
 
             prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
-                for f in self.instantiate(wordseq, i, prev_tag, tag):
+                for f in self.instantiate(wordseq, i, prev_tag):
                     if f in self.fdict:
-                        gradients[self.fdict[f]] += 1
+                        gradients[self.fdict[f], self.tdict[tag]] += 1
                 prev_tag = tag
 
             alpha = self.forward(wordseq)
             beta = self.backward(wordseq)
             logZ = self.logsumexp(alpha[-1])
+            # print(logZ, self.logsumexp(
+            #     beta[0] + self.score(self.instantiate(wordseq, 0, self.BOS))))
 
-            for i, tag in enumerate(self.tags):
-                fvector = self.instantiate(wordseq, 0, self.BOS, tag)
-                p = np.exp(self.score(fvector) + beta[0, i] - logZ)
-                for f in fvector:
-                    if f in self.fdict:
-                        gradients[self.fdict[f]] -= p
+            fvector = self.instantiate(wordseq, 0, self.BOS)
+            probs = np.exp(self.score(fvector) + beta[0] - logZ)
+            for f in fvector:
+                if f in self.fdict:
+                    gradients[self.fdict[f]] -= probs
 
             for i in range(1, len(tagseq)):
-                for j, tag in enumerate(self.tags):
-                    fvectors = [self.instantiate(wordseq, i, prev_tag, tag)
-                                for prev_tag in self.tags]
-                    scores = [self.score(fvector) for fvector in fvectors]
-                    probs = np.exp(scores + alpha[i - 1] + beta[i, j] - logZ)
-
-                    for fvector, p in zip(fvectors, probs):
-                        for f in fvector:
-                            if f in self.fdict:
-                                gradients[self.fdict[f]] -= p
+                for j, prev_tag in enumerate(self.tags):
+                    fvector = self.instantiate(wordseq, i, prev_tag)
+                    probs = np.exp(self.score(fvector) +
+                                   alpha[i - 1, j] + beta[i] - logZ)
+                    for f in fvector:
+                        if f in self.fdict:
+                            gradients[self.fdict[f]] -= probs
 
         # self.W -= eta * c * self.W
-        self.W += eta * gradients
+        self.W += gradients
 
     def forward(self, wordseq):
         T = len(wordseq)
         alpha = np.zeros((T, self.N))
 
-        fvectors = [self.instantiate(wordseq, 0, self.BOS, tag)
-                    for tag in self.tags]
-        alpha[0] = [self.score(fvector) for fvector in fvectors]
+        fvector = self.instantiate(wordseq, 0, self.BOS)
+        alpha[0] = self.score(fvector)
 
         for i in range(1, T):
-            for j, tag in enumerate(self.tags):
-                fvectors = [self.instantiate(wordseq, i, prev_tag, tag)
-                            for prev_tag in self.tags]
-                scores = [self.score(fvector) for fvector in fvectors]
-                alpha[i][j] = self.logsumexp(alpha[i - 1] + scores)
+            fvectors = [self.instantiate(wordseq, i, prev_tag)
+                        for prev_tag in self.tags]
+            scores = np.array([self.score(fvector) for fvector in fvectors])
+            alpha[i] = [self.logsumexp(scores[:, j] + alpha[i - 1])
+                        for j in range(self.N)]
         return alpha
 
     def backward(self, wordseq):
@@ -121,11 +120,11 @@ class CRF(object):
         beta = np.zeros((T, self.N))
 
         for i in reversed(range(T - 1)):
-            for j, prev_tag in enumerate(self.tags):
-                fvectors = [self.instantiate(wordseq, i + 1, prev_tag, tag)
-                            for tag in self.tags]
-                scores = [self.score(fvector) for fvector in fvectors]
-                beta[i][j] = self.logsumexp(beta[i + 1] + scores)
+            fvectors = [self.instantiate(wordseq, i + 1, prev_tag)
+                        for prev_tag in self.tags]
+            scores = np.array([self.score(fvector) for fvector in fvectors])
+            beta[i] = [self.logsumexp(scores[j] + beta[i + 1])
+                       for j in range(self.N)]
         return beta
 
     def predict(self, wordseq):
@@ -133,18 +132,16 @@ class CRF(object):
         delta = np.zeros((T, self.N))
         paths = np.zeros((T, self.N), dtype='int')
 
-        fvectors = [self.instantiate(wordseq, 0, self.BOS, tag)
-                    for tag in self.tags]
-        delta[0] = [self.score(fvector) for fvector in fvectors]
+        fvector = self.instantiate(wordseq, 0, self.BOS)
+        delta[0] = self.score(fvector)
 
         for i in range(1, T):
-            for j, tag in enumerate(self.tags):
-                fvectors = [self.instantiate(wordseq, i, prev_tag, tag)
-                            for prev_tag in self.tags]
-                scores = [self.score(fvector)
-                          for fvector in fvectors] + delta[i - 1]
-                paths[i][j] = np.argmax(scores)
-                delta[i][j] = scores[paths[i][j]]
+            fvectors = [self.instantiate(wordseq, i, prev_tag)
+                        for prev_tag in self.tags]
+            scores = np.array([delta[i - 1][j] + self.score(fvector)
+                               for j, fvector in enumerate(fvectors)])
+            paths[i] = np.argmax(scores, axis=0)
+            delta[i] = scores[paths[i], np.arange(self.N)]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
@@ -156,13 +153,13 @@ class CRF(object):
     def score(self, fvector):
         scores = [self.W[self.fdict[f]]
                   for f in fvector if f in self.fdict]
-        return np.sum(scores)
+        return np.sum(scores, axis=0)
 
     def logsumexp(self, scores):
         s_max = np.max(scores)
         return s_max + np.log(np.exp(scores - s_max).sum())
 
-    def instantiate(self, wordseq, index, prev_tag, tag):
+    def instantiate(self, wordseq, index, prev_tag):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else "^^"
         next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
@@ -172,31 +169,31 @@ class CRF(object):
         last_char = word[-1]
 
         fvector = []
-        fvector.append(('01', tag, prev_tag))
-        fvector.append(('02', tag, word))
-        fvector.append(('03', tag, prev_word))
-        fvector.append(('04', tag, next_word))
-        fvector.append(('05', tag, word, prev_char))
-        fvector.append(('06', tag, word, next_char))
-        fvector.append(('07', tag, first_char))
-        fvector.append(('08', tag, last_char))
+        fvector.append(('01', prev_tag))
+        fvector.append(('02', word))
+        fvector.append(('03', prev_word))
+        fvector.append(('04', next_word))
+        fvector.append(('05', word, prev_char))
+        fvector.append(('06', word, next_char))
+        fvector.append(('07', first_char))
+        fvector.append(('08', last_char))
 
-        for char in word[1: -1]:
-            fvector.append(('09', tag, char))
-            fvector.append(('10', tag, first_char, char))
-            fvector.append(('11', tag, last_char, char))
+        for char in word[1:-1]:
+            fvector.append(('09', char))
+            fvector.append(('10', first_char, char))
+            fvector.append(('11', last_char, char))
         if len(word) == 1:
-            fvector.append(('12', tag, word, prev_char, next_char))
+            fvector.append(('12', word, prev_char, next_char))
         for i in range(1, len(word)):
             prev_char, char = word[i - 1], word[i]
             if prev_char == char:
-                fvector.append(('13', tag, char, 'consecutive'))
+                fvector.append(('13', char, 'consecutive'))
             if i <= 4:
-                fvector.append(('14', tag, word[: i]))
-                fvector.append(('15', tag, word[-i:]))
+                fvector.append(('14', word[:i]))
+                fvector.append(('15', word[-i:]))
         if len(word) <= 4:
-            fvector.append(('14', tag, word))
-            fvector.append(('15', tag, word))
+            fvector.append(('14', word))
+            fvector.append(('15', word))
         return fvector
 
     def evaluate(self, sentences):
