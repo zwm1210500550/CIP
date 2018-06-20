@@ -114,7 +114,7 @@ class loglinear_model(object):
                 for tag in tags:
                     if tag not in self.tag_list:
                         self.tag_list.append(tag)
-
+        self.tag_list=sorted(self.tag_list)
         self.tag_dict = {t: i for i, t in enumerate(self.tag_list)}
         self.weights = np.zeros(len(self.features))
         self.g = np.zeros(len(self.features))
