@@ -183,8 +183,8 @@ class CRF(object):
         scores[0] = (self.score(feature))
 
         for i in range(1, len(sentence)):
+            features = [self.create_feature_template(sentence, i, pre_tag) for pre_tag in self.tags]
             for j in range(len(self.tags)):
-                features = [self.create_feature_template(sentence, i, pre_tag) for pre_tag in self.tags]
                 score = [self.score(feature)[j] for feature in features]
                 scores[i][j] = self.logsumexp(score + scores[i - 1])
         return scores
