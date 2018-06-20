@@ -146,6 +146,10 @@ class loglinear_model(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
+    def logsumexp(self, scores):
+        s_max = np.max(scores)
+        return s_max + np.log(np.exp(scores - s_max).sum())
+
     def SGD_train(self, iteration=20, batch_size=50, shuffle=False, regulization=False, step_opt=False, eta=0.5,
                   C=0.0001):
         b = 0
@@ -175,13 +179,14 @@ class loglinear_model(object):
 
                 template = self.create_feature_template(sentence, j)
                 scores = [self.dot(template, t) for t in self.tag_list]
-                prob_list = np.exp(scores) / sum(np.exp(scores))
+                s = self.logsumexp(scores)
+                prob_list = np.array(scores) - s
 
                 for k in range(len(prob_list)):
                     offset = k * len(self.features)
                     for f in template:
                         if f in self.features:
-                            self.g[self.features[f] + offset] -= prob_list[k]
+                            self.g[self.features[f] + offset] -= np.exp(prob_list[k])
 
                 if b == batch_size:
                     if step_opt:
