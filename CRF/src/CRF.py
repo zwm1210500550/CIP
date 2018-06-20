@@ -250,8 +250,13 @@ class CRF(object):
                             if f in self.features:
                                 self.g[self.features[f]] -= p
 
-    def SGD_train(self, iteration=20, batchsize=1, shuffle=False):
+    def SGD_train(self, iteration=20, batchsize=1, shuffle=False, regulization=False, step_opt=False, eta=0.5,
+                  C=0.0001):
         max_dev_precision = 0
+        if regulization:
+            print('add regulization...C=%f' % (C), flush=True)
+        if step_opt:
+            print('add step optimization...eta=%f' % (eta), flush=True)
         for iter in range(iteration):
             b = 0
             starttime = datetime.datetime.now()
@@ -259,20 +264,30 @@ class CRF(object):
             if shuffle:
                 print('shuffle the train data...', flush=True)
                 self.train_data.shuffle()
-
             for i in range(len(self.train_data.sentences)):
-                # print('sentence' + str(i))
                 b += 1
                 sentence = self.train_data.sentences[i]
                 tags = self.train_data.tags[i]
                 self.update_gradient(sentence, tags)
                 if b == batchsize:
-                    self.weights += self.g
+                    if step_opt:
+                        self.weights += eta * self.g
+                    else:
+                        self.weights += self.g
+                    if regulization:
+                        self.weights -= C * eta * self.weights
+                    eta = max(eta * 0.999, 0.00001)
                     self.g = np.zeros(len(self.features))
                     b = 0
 
             if b > 0:
-                self.weights += self.g
+                if step_opt:
+                    self.weights += eta * self.g
+                else:
+                    self.weights += self.g
+                if regulization:
+                    self.weights -= C * eta * self.weights
+                eta = max(eta * 0.999, 0.00001)
                 self.g = np.zeros(len(self.features))
                 b = 0
 
@@ -301,12 +316,16 @@ if __name__ == '__main__':
     iterator = config['iterator']
     batchsize = config['batchsize']
     shuffle = config['shuffle']
+    regulization = config['regulization']
+    step_opt = config['step_opt']
+    C = config['C']
+    eta = config['eta']
 
     starttime = datetime.datetime.now()
     crf = CRF()
     crf.create_feature_space()
     print(crf.tag2id)
-    crf.SGD_train(iterator, batchsize, shuffle)
+    crf.SGD_train(iterator, batchsize, shuffle, regulization, step_opt, eta, C)
     # print(crf.forward(['你', '好', '啊']))
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")
