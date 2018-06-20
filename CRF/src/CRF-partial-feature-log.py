@@ -195,10 +195,9 @@ class CRF(object):
 
         for i in range(states - 2, -1, -1):
             features = [self.create_feature_template(sentence, i + 1, pre_tag) for pre_tag in self.tags]
-            score = [scores[i + 1] + (self.score(f)) for j, f in enumerate(features)]
             for j in range(len(self.tags)):
-                scores[i][j] = self.logsumexp(score[j])
-
+                score = scores[i + 1] + self.score(features[j])
+                scores[i][j] = self.logsumexp(score)
         return scores
 
     def update_gradient(self, sentence, tags):
