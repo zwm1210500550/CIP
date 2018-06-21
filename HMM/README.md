@@ -29,7 +29,7 @@ Create Hidden Markov Model(HMM) for POS Tagging
 
 optional arguments:
   -h, --help  show this help message and exit
-  -b          Use big data
+  -b          use big data
 ```
 
 ## 运行
