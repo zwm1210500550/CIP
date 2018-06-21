@@ -6,10 +6,10 @@ import time
 import numpy as np
 
 
-def preprocessing(ftrain):
+def preprocess(fdata):
     start = 0
     sentences = []
-    with open(ftrain, 'r') as train:
+    with open(fdata, 'r') as train:
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
@@ -20,15 +20,13 @@ def preprocessing(ftrain):
     return sentences
 
 
-class GlobalLinearModel(object):
+class LinearModel(object):
 
     def __init__(self, tags):
         # 所有不同的词性
         self.tags = tags
-        # 句首词性
-        self.BOS = 'BOS'
         # 词性对应索引的字典
-        self.tagdict = {t: i for i, t in enumerate(tags)}
+        self.tdict = {t: i for i, t in enumerate(tags)}
 
         self.N = len(self.tags)
 
@@ -36,16 +34,14 @@ class GlobalLinearModel(object):
         feature_space = set()
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
-            prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
-                fvector = self.instantialize(wordseq, i, prev_tag)
+                fvector = self.instantiate(wordseq, i)
                 feature_space.update(fvector)
-                prev_tag = tag
 
         # 特征空间
         self.epsilon = list(feature_space)
         # 特征对应索引的字典
-        self.feadict = {f: i for i, f in enumerate(self.epsilon)}
+        self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
         self.D = len(self.epsilon)
 
@@ -55,65 +51,45 @@ class GlobalLinearModel(object):
         self.V = np.zeros((self.D, self.N), dtype='int')
 
     def online(self, sentences, epochs=20):
+        # 迭代指定次数训练模型
         for epoch in range(epochs):
             for sentence in sentences:
                 wordseq, tagseq = zip(*sentence)
                 # 根据单词序列的正确词性更新权重
-                self.update(wordseq, tagseq)
+                for i, tag in enumerate(tagseq):
+                    self.update(wordseq, i, tag)
             yield epoch
 
-    def update(self, wordseq, tagseq):
-        # 根据现有权重向量预测词性序列
-        preseq = self.predict(wordseq)
-        # 如果预测词性序列与正确词性序列不同，则更新权重
-        if not np.array_equal(tagseq, preseq):
-            prev_tag, prev_pre = self.BOS, self.BOS
-            for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
-                t_index, p_index = self.tagdict[tag], self.tagdict[pre]
-                for cf in self.instantialize(wordseq, i, prev_tag):
-                    if cf in self.feadict:
-                        self.W[self.feadict[cf]][t_index] += 1
-                for ef in self.instantialize(wordseq, i, prev_pre):
-                    if ef in self.feadict:
-                        self.W[self.feadict[ef]][p_index] -= 1
-                prev_tag, prev_pre = tag, pre
+    def update(self, wordseq, index, tag):
+        # 根据现有权重向量预测词性
+        pre = self.predict(wordseq, index)
+        # 如果预测词性与正确词性不同，则更新权重
+        if tag != pre:
+            for feature in self.instantiate(wordseq, index):
+                if feature in self.fdict:
+                    fi = self.fdict[feature]
+                    ti, pi = self.tdict[tag], self.tdict[pre]
+                    self.W[fi][ti] += 1
+                    self.W[fi][pi] -= 1
             self.V += self.W
 
-    def predict(self, wordseq, average=False):
-        T = len(wordseq)
-        delta = np.zeros((T, self.N))
-        paths = np.zeros((T, self.N), dtype='int')
-
-        fvector = self.instantialize(wordseq, 0, self.BOS)
-        delta[0] = self.score(fvector, average)
-
-        for i in range(1, T):
-            fvectors = [self.instantialize(wordseq, i, prev_tag)
-                        for prev_tag in self.tags]
-            scores = np.array([delta[i - 1][j] + self.score(fvector, average)
-                               for j, fvector in enumerate(fvectors)])
-            paths[i] = np.argmax(scores, axis=0)
-            delta[i] = scores[paths[i], np.arange(self.N)]
-        prev = np.argmax(delta[-1])
-
-        predict = [prev]
-        for i in range(T - 1, 0, -1):
-            prev = paths[i, prev]
-            predict.append(prev)
-        return [self.tags[i] for i in reversed(predict)]
+    def predict(self, wordseq, index, average=False):
+        fvector = self.instantiate(wordseq, index)
+        scores = self.score(fvector, average=average)
+        return self.tags[np.argmax(scores)]
 
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.V[self.feadict[f]]
-                      for f in fvector if f in self.feadict]
+            scores = [self.V[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.W[self.feadict[f]]
-                      for f in fvector if f in self.feadict]
+            scores = [self.W[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
         return np.sum(scores, axis=0)
 
-    def instantialize(self, wordseq, index, prev_tag):
+    def instantiate(self, wordseq, index):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else "^^"
         next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
@@ -123,7 +99,6 @@ class GlobalLinearModel(object):
         last_char = word[-1]
 
         fvector = []
-        fvector.append(('01', prev_tag))
         fvector.append(('02', word))
         fvector.append(('03', prev_word))
         fvector.append(('04', next_word))
@@ -156,15 +131,16 @@ class GlobalLinearModel(object):
         for sentence in sentences:
             total += len(sentence)
             wordseq, tagseq = zip(*sentence)
-            preseq = self.predict(wordseq, average)
+            preseq = [self.predict(wordseq, i, average)
+                      for i in range(len(wordseq))]
             tp += sum([t == p for t, p in zip(tagseq, preseq)])
         precision = tp / total
         return tp, total, precision
 
 
 if __name__ == '__main__':
-    train = preprocessing('data/train.conll')
-    dev = preprocessing('data/dev.conll')
+    train = preprocess('data/train.conll')
+    dev = preprocess('data/dev.conll')
 
     all_words, all_tags = zip(*np.vstack(train))
     tags = sorted(set(all_tags))
@@ -172,21 +148,21 @@ if __name__ == '__main__':
     start = time.time()
 
     print("Creating Linear Model with %d tags" % (len(tags)))
-    glm = GlobalLinearModel(tags)
+    lm = LinearModel(tags)
 
     print("Using %d sentences to create the feature space" % (len(train)))
-    glm.create_feature_space(train)
-    print("The size of the feature space is %d" % glm.D)
+    lm.create_feature_space(train)
+    print("The size of the feature space is %d" % lm.D)
 
     average = len(sys.argv) > 1 and sys.argv[1] == 'average'
     evaluations = []
 
     print("Using online-training algorithm to train the model")
-    for epoch in glm.online(train):
+    for epoch in lm.online(train):
         print("Epoch %d" % epoch)
-        result = glm.evaluate(train, average=average)
+        result = lm.evaluate(train, average=average)
         print("\ttrain: %d / %d = %4f" % result)
-        result = glm.evaluate(dev, average=average)
+        result = lm.evaluate(dev, average=average)
         print("\tdev: %d / %d = %4f" % result)
         evaluations.append(result)
 

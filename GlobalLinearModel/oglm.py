@@ -6,10 +6,10 @@ import time
 import numpy as np
 
 
-def preprocessing(ftrain):
+def preprocess(fdata):
     start = 0
     sentences = []
-    with open(ftrain, 'r') as train:
+    with open(fdata, 'r') as train:
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
@@ -27,6 +27,8 @@ class GlobalLinearModel(object):
         self.tags = tags
         # 句首词性
         self.BOS = 'BOS'
+        # 词性对应索引的字典
+        self.tdict = {t: i for i, t in enumerate(tags)}
 
         self.N = len(self.tags)
 
@@ -36,21 +38,21 @@ class GlobalLinearModel(object):
             wordseq, tagseq = zip(*sentence)
             prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
-                fvector = self.instantialize(wordseq, i, prev_tag, tag)
+                fvector = self.instantiate(wordseq, i, prev_tag)
                 feature_space.update(fvector)
                 prev_tag = tag
 
         # 特征空间
         self.epsilon = list(feature_space)
         # 特征对应索引的字典
-        self.feadict = {f: i for i, f in enumerate(self.epsilon)}
+        self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros(self.D, dtype='int')
+        self.W = np.zeros((self.D, self.N), dtype='int')
         # 累加特征权重
-        self.V = np.zeros(self.D, dtype='int')
+        self.V = np.zeros((self.D, self.N), dtype='int')
 
     def online(self, sentences, epochs=20):
         for epoch in range(epochs):
@@ -67,12 +69,13 @@ class GlobalLinearModel(object):
         if not np.array_equal(tagseq, preseq):
             prev_tag, prev_pre = self.BOS, self.BOS
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
-                for cf in self.instantialize(wordseq, i, prev_tag, tag):
-                    if cf in self.feadict:
-                        self.W[self.feadict[cf]] += 1
-                for ef in self.instantialize(wordseq, i, prev_pre, pre):
-                    if ef in self.feadict:
-                        self.W[self.feadict[ef]] -= 1
+                ti, pi = self.tdict[tag], self.tdict[pre]
+                for cf in self.instantiate(wordseq, i, prev_tag):
+                    if cf in self.fdict:
+                        self.W[self.fdict[cf]][ti] += 1
+                for ef in self.instantiate(wordseq, i, prev_pre):
+                    if ef in self.fdict:
+                        self.W[self.fdict[ef]][pi] -= 1
                 prev_tag, prev_pre = tag, pre
             self.V += self.W
 
@@ -81,19 +84,16 @@ class GlobalLinearModel(object):
         delta = np.zeros((T, self.N))
         paths = np.zeros((T, self.N), dtype='int')
 
-        fvectors = [self.instantialize(wordseq, 0, self.BOS, tag)
-                    for tag in self.tags]
-        delta[0] = [self.score(fvector, average)
-                    for fvector in fvectors]
+        fvector = self.instantiate(wordseq, 0, self.BOS)
+        delta[0] = self.score(fvector, average)
 
         for i in range(1, T):
-            for j, tag in enumerate(self.tags):
-                fvectors = [self.instantialize(wordseq, i, prev_tag, tag)
-                            for prev_tag in self.tags]
-                scores = [self.score(fvector, average) for fvector in fvectors]
-                scores += delta[i - 1]
-                paths[i][j] = np.argmax(scores)
-                delta[i][j] = scores[paths[i][j]]
+            fvectors = [self.instantiate(wordseq, i, prev_tag)
+                        for prev_tag in self.tags]
+            scores = np.array([delta[i - 1][j] + self.score(fv, average)
+                               for j, fv in enumerate(fvectors)])
+            paths[i] = np.argmax(scores, axis=0)
+            delta[i] = scores[paths[i], np.arange(self.N)]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
@@ -105,15 +105,15 @@ class GlobalLinearModel(object):
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.V[self.feadict[f]]
-                      for f in fvector if f in self.feadict]
+            scores = [self.V[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.W[self.feadict[f]]
-                      for f in fvector if f in self.feadict]
-        return np.sum(scores)
+            scores = [self.W[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
+        return np.sum(scores, axis=0)
 
-    def instantialize(self, wordseq, index, prev_tag, tag):
+    def instantiate(self, wordseq, index, prev_tag):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else "^^"
         next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
@@ -123,31 +123,31 @@ class GlobalLinearModel(object):
         last_char = word[-1]
 
         fvector = []
-        fvector.append(('01', tag, prev_tag))
-        fvector.append(('02', tag, word))
-        fvector.append(('03', tag, prev_word))
-        fvector.append(('04', tag, next_word))
-        fvector.append(('05', tag, word, prev_char))
-        fvector.append(('06', tag, word, next_char))
-        fvector.append(('07', tag, first_char))
-        fvector.append(('08', tag, last_char))
+        fvector.append(('01', prev_tag))
+        fvector.append(('02', word))
+        fvector.append(('03', prev_word))
+        fvector.append(('04', next_word))
+        fvector.append(('05', word, prev_char))
+        fvector.append(('06', word, next_char))
+        fvector.append(('07', first_char))
+        fvector.append(('08', last_char))
 
         for char in word[1:-1]:
-            fvector.append(('09', tag, char))
-            fvector.append(('10', tag, first_char, char))
-            fvector.append(('11', tag, last_char, char))
+            fvector.append(('09', char))
+            fvector.append(('10', first_char, char))
+            fvector.append(('11', last_char, char))
         if len(word) == 1:
-            fvector.append(('12', tag, word, prev_char, next_char))
+            fvector.append(('12', word, prev_char, next_char))
         for i in range(1, len(word)):
             prev_char, char = word[i - 1], word[i]
             if prev_char == char:
-                fvector.append(('13', tag, char, 'consecutive'))
+                fvector.append(('13', char, 'consecutive'))
             if i <= 4:
-                fvector.append(('14', tag, word[:i]))
-                fvector.append(('15', tag, word[-i:]))
+                fvector.append(('14', word[:i]))
+                fvector.append(('15', word[-i:]))
         if len(word) <= 4:
-            fvector.append(('14', tag, word))
-            fvector.append(('15', tag, word))
+            fvector.append(('14', word))
+            fvector.append(('15', word))
         return fvector
 
     def evaluate(self, sentences, average=False):
@@ -163,15 +163,15 @@ class GlobalLinearModel(object):
 
 
 if __name__ == '__main__':
-    train = preprocessing('data/train.conll')
-    dev = preprocessing('data/dev.conll')
+    train = preprocess('data/train.conll')
+    dev = preprocess('data/dev.conll')
 
     all_words, all_tags = zip(*np.vstack(train))
     tags = sorted(set(all_tags))
 
     start = time.time()
 
-    print("Creating Global-Linear Model with %d tags" % (len(tags)))
+    print("Creating Linear Model with %d tags" % (len(tags)))
     glm = GlobalLinearModel(tags)
 
     print("Using %d sentences to create the feature space" % (len(train)))

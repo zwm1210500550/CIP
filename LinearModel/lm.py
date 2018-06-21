@@ -6,10 +6,10 @@ import time
 import numpy as np
 
 
-def preprocessing(ftrain):
+def preprocess(fdata):
     start = 0
     sentences = []
-    with open(ftrain, 'r') as train:
+    with open(fdata, 'r') as train:
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
@@ -33,13 +33,13 @@ class LinearModel(object):
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
-                fvector = self.instantialize(wordseq, i, tag)
+                fvector = self.instantiate(wordseq, i, tag)
                 feature_space.update(fvector)
 
         # 特征空间
         self.epsilon = list(feature_space)
         # 特征对应索引的字典
-        self.feadict = {f: i for i, f in enumerate(self.epsilon)}
+        self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
         self.D = len(self.epsilon)
 
@@ -62,34 +62,33 @@ class LinearModel(object):
         pre = self.predict(wordseq, index)
         # 如果预测词性与正确词性不同，则更新权重
         if tag != pre:
-            cfvector = self.instantialize(wordseq, index, tag)
-            efvector = self.instantialize(wordseq, index, pre)
+            cfvector = self.instantiate(wordseq, index, tag)
+            efvector = self.instantiate(wordseq, index, pre)
             for cf, ef in zip(cfvector, efvector):
-                if cf in self.feadict:
-                    self.W[self.feadict[cf]] += 1
-                if ef in self.feadict:
-                    self.W[self.feadict[ef]] -= 1
+                if cf in self.fdict:
+                    self.W[self.fdict[cf]] += 1
+                if ef in self.fdict:
+                    self.W[self.fdict[ef]] -= 1
             self.V += self.W
 
     def predict(self, wordseq, index, average=False):
-        fvectors = [self.instantialize(wordseq, index, tag)
+        fvectors = [self.instantiate(wordseq, index, tag)
                     for tag in self.tags]
-        scores = [self.score(fvector, average=average)
-                  for fvector in fvectors]
+        scores = [self.score(fv, average=average) for fv in fvectors]
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.V[self.feadict[f]]
-                      for f in fvector if f in self.feadict]
+            scores = [self.V[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.W[self.feadict[f]]
-                      for f in fvector if f in self.feadict]
+            scores = [self.W[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
         return np.sum(scores)
 
-    def instantialize(self, wordseq, index, tag):
+    def instantiate(self, wordseq, index, tag):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else "^^"
         next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
@@ -139,8 +138,8 @@ class LinearModel(object):
 
 
 if __name__ == '__main__':
-    train = preprocessing('data/train.conll')
-    dev = preprocessing('data/dev.conll')
+    train = preprocess('data/train.conll')
+    dev = preprocess('data/dev.conll')
 
     all_words, all_tags = zip(*np.vstack(train))
     tags = sorted(set(all_tags))

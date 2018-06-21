@@ -13,6 +13,6 @@ $ python ocrf.py
 
 | Feature extracion optimization | precision |
 | :----------------------------: | :-------: |
-|               ×                | 0.871222  |
+|               ×                | 0.880045  |
 |               √                | 0.884656  |
 

@@ -6,10 +6,10 @@ import time
 import numpy as np
 
 
-def preprocessing(ftrain):
+def preprocess(fdata):
     start = 0
     sentences = []
-    with open(ftrain, 'r') as train:
+    with open(fdata, 'r') as train:
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
@@ -25,6 +25,8 @@ class LogLinearModel(object):
     def __init__(self, tags):
         # 所有不同的词性
         self.tags = tags
+        # 词性对应索引的字典
+        self.tdict = {t: i for i, t in enumerate(tags)}
 
         self.N = len(self.tags)
 
@@ -33,20 +35,20 @@ class LogLinearModel(object):
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
-                fvector = self.instantialize(wordseq, i, tag)
+                fvector = self.instantiate(wordseq, i)
                 feature_space.update(fvector)
 
         # 特征空间
         self.epsilon = list(feature_space)
         # 特征对应索引的字典
-        self.feadict = {f: i for i, f in enumerate(self.epsilon)}
+        self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
         self.D = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros(self.D)
+        self.W = np.zeros((self.D, self.N))
 
-    def SGD(self, sentences, B=50, C=0.0001, eta=0.5, epochs=20):
+    def SGD(self, sentences, batch_size=50, c=0.0001, eta=0.5, epochs=20):
         training_data = []
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
@@ -54,46 +56,47 @@ class LogLinearModel(object):
                 training_data.append((wordseq, i, tag))
         for epoch in range(epochs):
             random.shuffle(training_data)
-            batches = [training_data[i:i + B]
-                       for i in range(0, len(training_data), B)]
+            batches = [training_data[i:i + batch_size]
+                       for i in range(0, len(training_data), batch_size)]
             for batch in batches:
                 # 根据批次数据更新权重
-                self.update(batch, C, max(eta, 0.00001))
+                self.update(batch, c, max(eta, 0.00001))
                 eta *= 0.999
             yield epoch
 
-    def update(self, batch, C, eta):
-        gradients = np.zeros(self.D)
+    def update(self, batch, c, eta):
+        gradients = np.zeros((self.D, self.N))
         for wordseq, i, tag in batch:
-            for cf in self.instantialize(wordseq, i, tag):
-                if cf in self.feadict:
-                    gradients[self.feadict[cf]] += 1
-            # 获取每个词性对应的所有特征
-            fvectors = [self.instantialize(wordseq, i, t)
-                        for t in self.tags]
-            scores = [self.score(fvector) for fvector in fvectors]
-            probs = np.exp(scores) / sum(np.exp(scores))
+            ti = self.tdict[tag]
 
-            for fvector, p in zip(fvectors, probs):
-                for f in fvector:
-                    if f in self.feadict:
-                        gradients[self.feadict[f]] -= p
-        self.W -= eta * C * self.W
+            fvector = self.instantiate(wordseq, i)
+            scores = self.score(fvector)
+            probs = np.exp(scores - self.logsumexp(scores))
+
+            for f in fvector:
+                if f in self.fdict:
+                    fi = self.fdict[f]
+                    gradients[fi][ti] += 1
+                    gradients[fi] -= probs
+
+        self.W -= eta * c * self.W
         self.W += eta * gradients
 
     def predict(self, wordseq, index):
-        fvectors = [self.instantialize(wordseq, index, tag)
-                    for tag in self.tags]
-        scores = [self.score(fvector)
-                  for fvector in fvectors]
+        fvector = self.instantiate(wordseq, index)
+        scores = self.score(fvector)
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector):
-        scores = [self.W[self.feadict[f]]
-                  for f in fvector if f in self.feadict]
-        return np.sum(scores)
+        scores = [self.W[self.fdict[f]]
+                  for f in fvector if f in self.fdict]
+        return np.sum(scores, axis=0)
 
-    def instantialize(self, wordseq, index, tag):
+    def logsumexp(self, scores):
+        s_max = max(scores)
+        return s_max + np.log(np.exp(scores - s_max).sum())
+
+    def instantiate(self, wordseq, index):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else "^^"
         next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
@@ -103,30 +106,30 @@ class LogLinearModel(object):
         last_char = word[-1]
 
         fvector = []
-        fvector.append(('02', tag, word))
-        fvector.append(('03', tag, prev_word))
-        fvector.append(('04', tag, next_word))
-        fvector.append(('05', tag, word, prev_char))
-        fvector.append(('06', tag, word, next_char))
-        fvector.append(('07', tag, first_char))
-        fvector.append(('08', tag, last_char))
+        fvector.append(('02', word))
+        fvector.append(('03', prev_word))
+        fvector.append(('04', next_word))
+        fvector.append(('05', word, prev_char))
+        fvector.append(('06', word, next_char))
+        fvector.append(('07', first_char))
+        fvector.append(('08', last_char))
 
         for char in word[1:-1]:
-            fvector.append(('09', tag, char))
-            fvector.append(('10', tag, first_char, char))
-            fvector.append(('11', tag, last_char, char))
+            fvector.append(('09', char))
+            fvector.append(('10', first_char, char))
+            fvector.append(('11', last_char, char))
         if len(word) == 1:
-            fvector.append(('12', tag, word, prev_char, next_char))
+            fvector.append(('12', word, prev_char, next_char))
         for i in range(1, len(word)):
             prev_char, char = word[i - 1], word[i]
             if prev_char == char:
-                fvector.append(('13', tag, char, 'consecutive'))
+                fvector.append(('13', char, 'consecutive'))
             if i <= 4:
-                fvector.append(('14', tag, word[:i]))
-                fvector.append(('15', tag, word[-i:]))
+                fvector.append(('14', word[:i]))
+                fvector.append(('15', word[-i:]))
         if len(word) <= 4:
-            fvector.append(('14', tag, word))
-            fvector.append(('15', tag, word))
+            fvector.append(('14', word))
+            fvector.append(('15', word))
         return fvector
 
     def evaluate(self, sentences):
@@ -143,8 +146,8 @@ class LogLinearModel(object):
 
 
 if __name__ == '__main__':
-    train = preprocessing('data/train.conll')
-    dev = preprocessing('data/dev.conll')
+    train = preprocess('data/train.conll')
+    dev = preprocess('data/dev.conll')
 
     all_words, all_tags = zip(*np.vstack(train))
     tags = sorted(set(all_tags))
@@ -152,20 +155,20 @@ if __name__ == '__main__':
     start = time.time()
 
     print("Creating Log-Linear Model with %d tags" % (len(tags)))
-    llm = LogLinearModel(tags)
+    lm = LogLinearModel(tags)
 
     print("Using %d sentences to create the feature space" % (len(train)))
-    llm.create_feature_space(train)
-    print("The size of the feature space is %d" % llm.D)
+    lm.create_feature_space(train)
+    print("The size of the feature space is %d" % lm.D)
 
     evaluations = []
 
     print("Using SGD algorithm to train the model")
-    for epoch in llm.SGD(train):
+    for epoch in lm.SGD(train):
         print("Epoch %d" % epoch)
-        result = llm.evaluate(train)
+        result = lm.evaluate(train)
         print("\ttrain: %d / %d = %4f" % result)
-        result = llm.evaluate(dev)
+        result = lm.evaluate(dev)
         print("\tdev: %d / %d = %4f" % result)
         evaluations.append(result)
 
