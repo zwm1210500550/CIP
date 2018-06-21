@@ -1,0 +1,13 @@
+Creating HMM with 4537 words and 31 tags
+Using 803 sentences to train the HMM
+Using Viterbi algorithm to tag the dataset
+Precision of dev: 37381 / 50319 = 0.742880
+5.535537s elapsed
+
+Creating HMM with 55953 words and 35 tags
+Using 46572 sentences to train the HMM
+Using Viterbi algorithm to tag the dataset
+Precision of dev: 52973 / 59955 = 0.883546
+Precision of test: 72196 / 81578 = 0.884994
+17.214356s elapsed
+

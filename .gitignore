@@ -4,3 +4,6 @@ bigdata
 
 # ignore pycache
 __pycache__
+
+# ignore pickle files
+*.pkl
