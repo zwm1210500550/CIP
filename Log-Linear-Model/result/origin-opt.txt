@@ -1,68 +1,89 @@
 nohup: ignoring input
-start...
 ./data/train.conll:共803个句子,共20454个词。
 ./data/dev.conll:共1910个句子,共50319个词。
+./data/dev.conll:共1910个句子,共50319个词。
 the total number of features is 81113
-using regulization and step optimization
+add regulization...C=0.000100
+add step optimization...eta=0.500000
 iterator: 0
 	train准确率：19393 / 20454 = 0.948128
 	dev准确率：42790 / 50319 = 0.850375
+	iteration executing time is 23 s
 iterator: 1
 	train准确率：20093 / 20454 = 0.982351
 	dev准确率：43489 / 50319 = 0.864266
+	iteration executing time is 23 s
 iterator: 2
 	train准确率：20276 / 20454 = 0.991298
 	dev准确率：43698 / 50319 = 0.868419
+	iteration executing time is 23 s
 iterator: 3
 	train准确率：20309 / 20454 = 0.992911
 	dev准确率：43634 / 50319 = 0.867148
+	iteration executing time is 23 s
 iterator: 4
 	train准确率：20346 / 20454 = 0.994720
 	dev准确率：43715 / 50319 = 0.868757
+	iteration executing time is 23 s
 iterator: 5
 	train准确率：20371 / 20454 = 0.995942
 	dev准确率：43749 / 50319 = 0.869433
+	iteration executing time is 24 s
 iterator: 6
 	train准确率：20396 / 20454 = 0.997164
 	dev准确率：43786 / 50319 = 0.870168
+	iteration executing time is 23 s
 iterator: 7
 	train准确率：20411 / 20454 = 0.997898
 	dev准确率：43832 / 50319 = 0.871082
+	iteration executing time is 24 s
 iterator: 8
 	train准确率：20424 / 20454 = 0.998533
-	dev准确率：43874 / 50319 = 0.871917
+	dev准确率：43875 / 50319 = 0.871937
+	iteration executing time is 25 s
 iterator: 9
 	train准确率：20427 / 20454 = 0.998680
 	dev准确率：43846 / 50319 = 0.871361
+	iteration executing time is 24 s
 iterator: 10
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43851 / 50319 = 0.871460
+	iteration executing time is 25 s
 iterator: 11
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43860 / 50319 = 0.871639
+	iteration executing time is 24 s
 iterator: 12
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43852 / 50319 = 0.871480
+	iteration executing time is 24 s
 iterator: 13
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43850 / 50319 = 0.871440
+	iteration executing time is 24 s
 iterator: 14
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43852 / 50319 = 0.871480
+	iteration executing time is 24 s
 iterator: 15
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43852 / 50319 = 0.871480
+	iteration executing time is 25 s
 iterator: 16
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43852 / 50319 = 0.871480
+	iteration executing time is 24 s
 iterator: 17
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43851 / 50319 = 0.871460
+	iteration executing time is 24 s
 iterator: 18
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43851 / 50319 = 0.871460
+	iteration executing time is 24 s
 iterator: 19
 	train准确率：20430 / 20454 = 0.998827
 	dev准确率：43852 / 50319 = 0.871480
-iterator = 8 , max_dev_precision = 0.871917
-executing time is 557 s
+	iteration executing time is 24 s
+iterator = 8 , max_dev_precision = 0.871937
+executing time is 486 s

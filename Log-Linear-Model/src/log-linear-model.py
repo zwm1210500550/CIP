@@ -1,7 +1,7 @@
 import datetime
 import numpy as np
 import random
-
+from scipy.misc import logsumexp
 from config import config
 
 
@@ -146,10 +146,6 @@ class loglinear_model(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def logsumexp(self, scores):
-        s_max = np.max(scores)
-        return s_max + np.log(np.exp(scores - s_max).sum())
-
     def SGD_train(self, iteration, batch_size=50, shuffle=False, regulization=False, step_opt=False, eta=0.5, C=0.0001):
         b = 0
         max_dev_precision = 0
@@ -176,7 +172,7 @@ class loglinear_model(object):
 
                 feature_list = [self.create_feature_template(sentence, tag, j) for tag in self.tag_list]
                 scores = [self.dot(template) for template in feature_list]
-                s = self.logsumexp(scores)
+                s = logsumexp(scores)
                 prob_list = np.array(scores) - s
 
                 for template, p in zip(feature_list, prob_list):
