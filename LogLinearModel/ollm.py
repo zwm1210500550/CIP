@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import pickle
 import random
 import time
 
 import numpy as np
+from scipy.misc import logsumexp
 
 
 def preprocess(fdata):
@@ -71,7 +73,7 @@ class LogLinearModel(object):
 
             fvector = self.instantiate(wordseq, i)
             scores = self.score(fvector)
-            probs = np.exp(scores - self.logsumexp(scores))
+            probs = np.exp(scores - logsumexp(scores))
 
             for f in fvector:
                 if f in self.fdict:
@@ -91,10 +93,6 @@ class LogLinearModel(object):
         scores = [self.W[self.fdict[f]]
                   for f in fvector if f in self.fdict]
         return np.sum(scores, axis=0)
-
-    def logsumexp(self, scores):
-        s_max = max(scores)
-        return s_max + np.log(np.exp(scores - s_max).sum())
 
     def instantiate(self, wordseq, index):
         word = wordseq[index]
@@ -143,6 +141,16 @@ class LogLinearModel(object):
             tp += sum([t == p for t, p in zip(tagseq, preseq)])
         precision = tp / total
         return tp, total, precision
+
+    def dump(self, file):
+        with open(file, 'wb') as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load(cls, file):
+        with open(file, 'rb') as f:
+            hmm = pickle.load(f)
+        return hmm
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import pickle
 import time
 
 import numpy as np
@@ -205,6 +206,16 @@ class CRF(object):
             tp += sum([t == p for t, p in zip(tagseq, preseq)])
         precision = tp / total
         return tp, total, precision
+
+    def dump(self, file):
+        with open(file, 'wb') as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load(cls, file):
+        with open(file, 'rb') as f:
+            hmm = pickle.load(f)
+        return hmm
 
 
 if __name__ == '__main__':
