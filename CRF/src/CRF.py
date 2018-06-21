@@ -1,7 +1,7 @@
 import datetime
 import numpy as np
 import random
-
+from scipy.misc import logsumexp
 from config import config
 
 
@@ -181,9 +181,6 @@ class CRF(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def logsumexp(self, scores):
-        s_max = np.max(scores)
-        return s_max + np.log(np.exp(scores - s_max).sum())
 
     def forward(self, sentence):
         path_scores = np.zeros((len(sentence), len(self.tags)))
@@ -195,7 +192,7 @@ class CRF(object):
             for j in range(len(self.tags)):
                 features = [self.create_feature_template(sentence, i, pre_tag, self.tags[j]) for pre_tag in self.tags]
                 scores = [self.score(feature) for feature in features]
-                path_scores[i][j] = self.logsumexp(path_scores[i - 1] + scores)
+                path_scores[i][j] = logsumexp(path_scores[i - 1] + scores)
         return path_scores
 
     def backward(self, sentence):
@@ -205,7 +202,7 @@ class CRF(object):
             for j in range(len(self.tags)):
                 features = [self.create_feature_template(sentence, i + 1, self.tags[j], tag) for tag in self.tags]
                 scores = [self.score(feature) for feature in features]
-                path_scores[i][j] = self.logsumexp(path_scores[i + 1] + scores)
+                path_scores[i][j] = logsumexp(path_scores[i + 1] + scores)
         return path_scores
 
     def update_gradient(self, sentence, tags):
@@ -222,7 +219,7 @@ class CRF(object):
 
         forward_scores = self.forward(sentence)
         backward_scores = self.backward(sentence)
-        dinominator = self.logsumexp(forward_scores[-1])
+        dinominator = logsumexp(forward_scores[-1])
 
         for i in range(len(sentence)):
             if i == 0:

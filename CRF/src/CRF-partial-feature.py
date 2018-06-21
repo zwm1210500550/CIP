@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 import random
+from scipy.misc import logsumexp
 from config import config
 
 
@@ -173,10 +174,6 @@ class CRF(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def logsumexp(self, scores):
-        s_max = np.max(scores)
-        return s_max + np.log(np.exp(scores - s_max).sum())
-
     def forward(self, sentence):
         scores = np.zeros((len(sentence), len(self.tags)))
         feature = self.create_feature_template(sentence, 0, self.BOS)
@@ -184,9 +181,11 @@ class CRF(object):
 
         for i in range(1, len(sentence)):
             features = [self.create_feature_template(sentence, i, pre_tag) for pre_tag in self.tags]
-            for j in range(len(self.tags)):
-                score = [self.score(feature)[j] for feature in features]
-                scores[i][j] = self.logsumexp(score + scores[i - 1])
+            # for j in range(len(self.tags)):
+            #     score = [self.score(feature)[j] for feature in features]
+            #     scores[i][j] = self.logsumexp(score + scores[i - 1])
+            score = np.transpose(np.array([self.score(f) for f in features]))
+            scores[i] = logsumexp(score + scores[i - 1], axis=1)
         return scores
 
     def backward(self, sentence):
@@ -195,9 +194,11 @@ class CRF(object):
 
         for i in range(states - 2, -1, -1):
             features = [self.create_feature_template(sentence, i + 1, pre_tag) for pre_tag in self.tags]
-            for j in range(len(self.tags)):
-                score = scores[i + 1] + self.score(features[j])
-                scores[i][j] = self.logsumexp(score)
+            # for j in range(len(self.tags)):
+            #     score = scores[i + 1] + self.score(features[j])
+            #     scores[i][j] = self.logsumexp(score)
+            score = np.array([self.score(f) for f in features])
+            scores[i] = logsumexp(score + scores[i + 1], axis=1)
         return scores
 
     def update_gradient(self, sentence, tags):
@@ -214,7 +215,7 @@ class CRF(object):
 
         forward_scores = self.forward(sentence)
         backward_scores = self.backward(sentence)
-        log_dinominator = self.logsumexp(forward_scores[-1])  # 得到分母log(Z(S))
+        log_dinominator = logsumexp(forward_scores[-1])  # 得到分母log(Z(S))
         for i in range(len(sentence)):
             if i == 0:
                 pre_tag = self.BOS
