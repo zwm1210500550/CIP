@@ -4,8 +4,8 @@ import argparse
 import time
 
 import numpy as np
-from config import Config
 
+from config import Config
 from hmm import HMM, preprocess
 
 # 解析命令参数
