@@ -4,13 +4,6 @@ import random
 
 from config import config
 
-train_data_file = config['train_data_file']
-dev_data_file = config['dev_data_file']
-test_data_file = config['test_data_file']
-averaged = config['averaged']
-iterator = config['iterator']
-shuffle = config['shuffle']
-
 
 class dataset(object):
     def __init__(self, filename):
@@ -49,10 +42,10 @@ class dataset(object):
 
 
 class liner_model(object):
-    def __init__(self):
-        self.train_data = dataset(train_data_file)
-        self.dev_data = dataset(dev_data_file)
-        self.test_data = dataset(test_data_file)
+    def __init__(self, train_data_file=None, dev_data_file=None, test_data_file=None):
+        self.train_data = dataset(train_data_file) if train_data_file != None else None
+        self.dev_data = dataset(dev_data_file) if dev_data_file != None else None
+        self.test_data = dataset(test_data_file) if test_data_file != None else None
         self.features = {}
         self.weights = []
         self.tag_list = []
@@ -205,6 +198,13 @@ class liner_model(object):
 
 
 if __name__ == '__main__':
+    train_data_file = config['train_data_file']
+    dev_data_file = config['dev_data_file']
+    test_data_file = config['test_data_file']
+    averaged = config['averaged']
+    iterator = config['iterator']
+    shuffle = config['shuffle']
+
     starttime = datetime.datetime.now()
     lm = liner_model()
     lm.create_feature_space()

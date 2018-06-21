@@ -42,10 +42,10 @@ class dataset(object):
 
 
 class loglinear_model(object):
-    def __init__(self):
-        self.train_data = dataset(train_data_file)
-        self.dev_data = dataset(dev_data_file)
-        self.test_data = dataset(test_data_file)
+    def __init__(self, train_data_file=None, dev_data_file=None, test_data_file=None):
+        self.train_data = dataset(train_data_file) if train_data_file != None else None
+        self.dev_data = dataset(dev_data_file) if dev_data_file != None else None
+        self.test_data = dataset(test_data_file) if test_data_file != None else None
         self.weights = []
         self.features = {}
         self.g = []
@@ -206,7 +206,7 @@ class loglinear_model(object):
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
-            if 'test.conll' in self.test_data.filename:
+            if self.test_data != None:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data)
                 print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision), flush=True)
             if dev_precision > max_dev_precision:
@@ -230,7 +230,7 @@ if __name__ == '__main__':
     eta = config['eta']
 
     starttime = datetime.datetime.now()
-    lm = loglinear_model()
+    lm = loglinear_model(train_data_file, dev_data_file, test_data_file)
     lm.create_feature_space()
     lm.SGD_train(iterator, batchsize, shuffle, regulization, step_opt, eta, C)
     endtime = datetime.datetime.now()

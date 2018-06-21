@@ -44,10 +44,10 @@ class dataset(object):
 
 
 class global_liner_model(object):
-    def __init__(self):
-        self.train_data = dataset(train_data_file)
-        self.dev_data = dataset(dev_data_file)
-        self.test_data = dataset(test_data_file)
+    def __init__(self, train_data_file=None, dev_data_file=None, test_data_file=None):
+        self.train_data = dataset(train_data_file) if train_data_file != None else None
+        self.dev_data = dataset(dev_data_file) if dev_data_file != None else None
+        self.test_data = dataset(test_data_file) if test_data_file != None else None
         self.features = {}
         self.weights = []
         self.v = []
@@ -214,7 +214,7 @@ class global_liner_model(object):
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)
 
-            if 'test.conll' in self.test_data.filename:
+            if self.test_data != None:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data, averaged)
                 print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision), flush=True)
 
@@ -237,7 +237,7 @@ if __name__ == '__main__':
     shuffle = config['shuffle']
 
     starttime = datetime.datetime.now()
-    model = global_liner_model()
+    model = global_liner_model(train_data_file, dev_data_file, test_data_file)
     model.create_feature_space()
     print(model.tag2id)
     model.online_train(iterator, averaged, shuffle)

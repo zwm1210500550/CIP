@@ -4,13 +4,6 @@ import random
 
 from config import config
 
-train_data_file = config['train_data_file']
-dev_data_file = config['dev_data_file']
-test_data_file = config['test_data_file']
-averaged = config['averaged']
-iterator = config['iterator']
-shuffle = config['shuffle']
-
 
 class dataset(object):
     def __init__(self, filename):
@@ -49,10 +42,10 @@ class dataset(object):
 
 
 class liner_model(object):
-    def __init__(self):
-        self.train_data = dataset(train_data_file)
-        self.dev_data = dataset(dev_data_file)
-        self.test_data = dataset(test_data_file)
+    def __init__(self, train_data_file=None, dev_data_file=None, test_data_file=None):
+        self.train_data = dataset(train_data_file) if train_data_file != None else None
+        self.dev_data = dataset(dev_data_file) if dev_data_file != None else None
+        self.test_data = dataset(test_data_file) if test_data_file != None else None
         self.features = {}
         self.weights = []
         self.v = []
@@ -170,7 +163,7 @@ class liner_model(object):
         max_dev_precision = 0.0
         max_iterator = -1
         update_time = 0
-        data=self.train_data.split()
+        data = self.train_data.split()
         if averaged == True:
             print('using V to predict dev data...')
         for iter in range(iterator):
@@ -215,7 +208,7 @@ class liner_model(object):
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
 
-            if 'test.conll' in self.test_data.filename:
+            if self.test_data != None:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data, averaged)
                 print('\t' + 'train准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
 
@@ -233,8 +226,15 @@ class liner_model(object):
 
 
 if __name__ == '__main__':
+    train_data_file = config['train_data_file']
+    dev_data_file = config['dev_data_file']
+    test_data_file = config['test_data_file']
+    averaged = config['averaged']
+    iterator = config['iterator']
+    shuffle = config['shuffle']
+
     starttime = datetime.datetime.now()
-    lm = liner_model()
+    lm = liner_model(train_data_file,dev_data_file,test_data_file)
     lm.create_feature_space()
     lm.online_train(iterator, averaged, shuffle)
     endtime = datetime.datetime.now()
