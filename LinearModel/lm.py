@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import pickle
-import sys
+import random
 import time
+from collections import Counter
 
 import numpy as np
 
@@ -27,7 +28,7 @@ class LinearModel(object):
         # 所有不同的词性
         self.tags = tags
 
-        self.N = len(self.tags)
+        self.n = len(self.tags)
 
     def create_feature_space(self, sentences):
         feature_space = set()
@@ -42,35 +43,61 @@ class LinearModel(object):
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
-        self.D = len(self.epsilon)
+        self.d = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros(self.D, dtype='int')
+        self.W = np.zeros(self.d)
         # 累加特征权重
-        self.V = np.zeros(self.D, dtype='int')
+        self.V = np.zeros(self.d)
 
-    def online(self, sentences, epochs=20):
+    def online(self, train, dev, file, epochs, interval, average, shuffle):
+        max_e, max_precision = 0, 0.0
+        # 迭代指定次数训练模型
         for epoch in range(epochs):
-            for sentence in sentences:
-                wordseq, tagseq = zip(*sentence)
-                # 根据单词序列的正确词性更新权重
-                for i, tag in enumerate(tagseq):
-                    self.update(wordseq, i, tag)
-            yield epoch
+            start = time.time()
+            # 随机打乱数据
+            if shuffle:
+                random.shuffle(train)
+            # 保存更新时间戳和每个特征最近更新时间戳的记录
+            self.k, self.R = 0, np.zeros(self.d, dtype='int')
+            for batch in train:
+                self.update(batch)
+            self.V += [(self.k - r) * w for r, w in zip(self.R, self.W)]
 
-    def update(self, wordseq, index, tag):
-        # 根据现有权重向量预测词性
-        pre = self.predict(wordseq, index)
-        # 如果预测词性与正确词性不同，则更新权重
-        if tag != pre:
-            cfvector = self.instantiate(wordseq, index, tag)
-            efvector = self.instantiate(wordseq, index, pre)
-            for cf, ef in zip(cfvector, efvector):
-                if cf in self.fdict:
-                    self.W[self.fdict[cf]] += 1
-                if ef in self.fdict:
-                    self.W[self.fdict[ef]] -= 1
-            self.V += self.W
+            print("Epoch %d / %d: " % (epoch, epochs))
+            print("\ttrain: %d / %d = %4f" % self.evaluate(train))
+            tp, total, precision = self.evaluate(dev, average=average)
+            print("\tdev: %d / %d = %4f" % (tp, total, precision))
+            print("\t%4f elapsed" % (time.time() - start))
+            if precision > max_precision:
+                self.dump(file)
+                max_e, max_precision = epoch, precision
+            elif epoch - max_e > interval:
+                break
+        print("max precision of dev is %4f at epoch %d" %
+              (max_precision, max_e))
+
+    def update(self, batch):
+        wordseq, tagseq = zip(*batch)
+        # 根据单词序列的正确词性更新权重
+        for i, tag in enumerate(tagseq):
+            # 根据现有权重向量预测词性
+            pre = self.predict(wordseq, i)
+            # 如果预测词性与正确词性不同，则更新权重
+            if tag != pre:
+                cfv = Counter(self.instantiate(wordseq, i, tag))
+                efv = Counter(self.instantiate(wordseq, i, pre))
+                fv = {f: cfv[f] - efv[f] for f in cfv | efv if f in self.fdict}
+
+                for f, v in fv.items():
+                    fi = self.fdict[f]
+                    # 累加权重加上步长乘以最近更新的权重
+                    self.V[fi] += (self.k - self.R[fi]) * self.W[fi]
+                    # 更新权重
+                    self.W[fi] += v
+                    # 更新时间戳记录
+                    self.R[fi] = self.k
+                self.k += 1
 
     def predict(self, wordseq, index, average=False):
         fvectors = [self.instantiate(wordseq, index, tag)
@@ -107,7 +134,7 @@ class LinearModel(object):
         fvector.append(('07', tag, first_char))
         fvector.append(('08', tag, last_char))
 
-        for char in word[1:-1]:
+        for char in word[1: -1]:
             fvector.append(('09', tag, char))
             fvector.append(('10', tag, first_char, char))
             fvector.append(('11', tag, last_char, char))
@@ -118,7 +145,7 @@ class LinearModel(object):
             if prev_char == char:
                 fvector.append(('13', tag, char, 'consecutive'))
             if i <= 4:
-                fvector.append(('14', tag, word[:i]))
+                fvector.append(('14', tag, word[: i]))
                 fvector.append(('15', tag, word[-i:]))
         if len(word) <= 4:
             fvector.append(('14', tag, word))
@@ -146,36 +173,3 @@ class LinearModel(object):
         with open(file, 'rb') as f:
             hmm = pickle.load(f)
         return hmm
-
-
-if __name__ == '__main__':
-    train = preprocess('data/train.conll')
-    dev = preprocess('data/dev.conll')
-
-    all_words, all_tags = zip(*np.vstack(train))
-    tags = sorted(set(all_tags))
-
-    start = time.time()
-
-    print("Creating Linear Model with %d tags" % (len(tags)))
-    lm = LinearModel(tags)
-
-    print("Using %d sentences to create the feature space" % (len(train)))
-    lm.create_feature_space(train)
-    print("The size of the feature space is %d" % lm.D)
-
-    average = len(sys.argv) > 1 and sys.argv[1] == 'average'
-    evaluations = []
-
-    print("Using online-training algorithm to train the model")
-    for epoch in lm.online(train):
-        print("Epoch %d" % epoch)
-        result = lm.evaluate(train, average=average)
-        print("\ttrain: %d / %d = %4f" % result)
-        result = lm.evaluate(dev, average=average)
-        print("\tdev: %d / %d = %4f" % result)
-        evaluations.append(result)
-
-    print("Successfully evaluated dev data using the model")
-    print("Precision: %d / %d = %4f" % max(evaluations, key=lambda x: x[2]))
-    print("%4fs elapsed" % (time.time() - start))
