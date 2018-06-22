@@ -186,7 +186,7 @@ class liner_model(object):
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
 
-            if 'test.conll' in self.test_data.filename:
+            if self.test_data != None:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data, averaged)
                 print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
 
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     shuffle = config['shuffle']
 
     starttime = datetime.datetime.now()
-    lm = liner_model()
+    lm = liner_model(train_data_file, dev_data_file, test_data_file)
     lm.create_feature_space()
     lm.online_train(iterator, averaged, shuffle)
     endtime = datetime.datetime.now()
