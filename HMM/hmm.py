@@ -31,12 +31,12 @@ class HMM(object):
         # 词性对应索引的字典
         self.tdict = {t: i for i, t in enumerate(tags)}
 
-        self.M = len(self.words)
-        self.N = len(self.tags)
+        self.m = len(self.words)
+        self.n = len(self.tags)
 
     def train(self, sentences, alpha=0.01, file=None):
-        trans_matrix = np.zeros((self.N + 1, self.N + 1))
-        emit_matrix = np.zeros((self.M + 1, self.N))
+        trans_matrix = np.zeros((self.n + 1, self.n + 1))
+        emit_matrix = np.zeros((self.m + 1, self.n))
 
         for sentence in sentences:
             prev = -1
@@ -44,7 +44,7 @@ class HMM(object):
                 trans_matrix[self.tdict[tag], prev] += 1
                 emit_matrix[self.wdict[word], self.tdict[tag]] += 1
                 prev = self.tdict[tag]
-            trans_matrix[self.N, prev] += 1
+            trans_matrix[self.n, prev] += 1
         trans_matrix = self.smooth(trans_matrix, alpha)
 
         # 迁移概率
@@ -66,14 +66,14 @@ class HMM(object):
 
     def predict(self, wordseq):
         T = len(wordseq)
-        delta = np.zeros((T, self.N))
-        paths = np.zeros((T, self.N), dtype='int')
+        delta = np.zeros((T, self.n))
+        paths = np.zeros((T, self.n), dtype='int')
         indices = [self.wdict[w] if w in self.wdict else -1 for w in wordseq]
 
         delta[0] = self.BOS + self.B[indices[0]]
 
         for i in range(1, T):
-            for j in range(self.N):
+            for j in range(self.n):
                 probs = delta[i - 1] + self.A[j]
                 paths[i, j] = np.argmax(probs)
                 delta[i, j] = probs[paths[i, j]] + self.B[indices[i], j]
