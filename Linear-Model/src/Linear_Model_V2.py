@@ -203,7 +203,7 @@ class liner_model(object):
                     self.update_times[i] = current_update_times
                     self.v[i] += (current_update_times - last_update_times - 1) * last_w_value + self.weights[i]
 
-            train_correct_num, total_num, train_precision = self.evaluate(self.train_data, averaged)
+            train_correct_num, total_num, train_precision = self.evaluate(self.train_data, False)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision))
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision))
