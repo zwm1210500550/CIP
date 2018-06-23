@@ -66,7 +66,8 @@ class LinearModel(object):
             self.V += [(self.k - r) * w for r, w in zip(self.R, self.W)]
 
             print("Epoch %d / %d: " % (epoch, epochs))
-            print("\ttrain: %d / %d = %4f" % self.evaluate(train))
+            result = self.evaluate(train, average=average)
+            print("\ttrain: %d / %d = %4f" % result)
             tp, total, precision = self.evaluate(dev, average=average)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
             print("\t%4f elapsed" % (time.time() - start))
@@ -87,9 +88,9 @@ class LinearModel(object):
             # 如果预测词性与正确词性不同，则更新权重
             if tag != pre:
                 ti, pi = self.tdict[tag], self.tdict[pre]
-                findices = [self.fdict[f] for f in self.instantiate(wordseq, i)
-                            if f in self.fdict]
-                for fi in findices:
+                fv = self.instantiate(wordseq, i)
+                fis = [self.fdict[f] for f in fv if f in self.fdict]
+                for fi in fis:
                     prev_w, prev_r = self.W[fi, [ti, pi]], self.R[fi, [ti, pi]]
                     # 累加权重加上步长乘以权重
                     self.V[fi, [ti, pi]] += (self.k - prev_r) * prev_w

@@ -3,6 +3,7 @@
 import pickle
 import sys
 import time
+from collections import Counter
 
 import numpy as np
 
@@ -29,7 +30,7 @@ class GlobalLinearModel(object):
         # 句首词性
         self.BOS = 'BOS'
 
-        self.N = len(self.tags)
+        self.n = len(self.tags)
 
     def create_feature_space(self, sentences):
         feature_space = set()
@@ -46,41 +47,69 @@ class GlobalLinearModel(object):
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
-        self.D = len(self.epsilon)
+        self.d = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros(self.D, dtype='int')
+        self.W = np.zeros(self.d)
         # 累加特征权重
-        self.V = np.zeros(self.D, dtype='int')
+        self.V = np.zeros(self.d)
 
-    def online(self, sentences, epochs=20):
+    def online(self, train, dev, file, epochs, interval, average, shuffle):
+        max_e, max_precision = 0, 0.0
         for epoch in range(epochs):
-            for sentence in sentences:
-                wordseq, tagseq = zip(*sentence)
-                # 根据单词序列的正确词性更新权重
-                self.update(wordseq, tagseq)
-            yield epoch
+            start = time.time()
+            # 随机打乱数据
+            if shuffle:
+                random.shuffle(train)
+            # 保存更新时间戳和每个特征最近更新时间戳的记录
+            self.k, self.R = 0, np.zeros(self.d, dtype='int')
+            for batch in train:
+                self.update(batch)
+            self.V += [(self.k - r) * w for r, w in zip(self.R, self.W)]
 
-    def update(self, wordseq, tagseq):
+            print("Epoch %d / %d: " % (epoch, epochs))
+            result = self.evaluate(train, average=average)
+            print("\ttrain: %d / %d = %4f" % result)
+            tp, total, precision = self.evaluate(dev, average=average)
+            print("\tdev: %d / %d = %4f" % (tp, total, precision))
+            print("\t%4f elapsed" % (time.time() - start))
+            if precision > max_precision:
+                self.dump(file)
+                max_e, max_precision = epoch, precision
+            elif epoch - max_e > interval:
+                break
+        print("max precision of dev is %4f at epoch %d" %
+              (max_precision, max_e))
+
+    def update(self, batch):
+        wordseq, tagseq = zip(*batch)
         # 根据现有权重向量预测词性序列
         preseq = self.predict(wordseq)
         # 如果预测词性序列与正确词性序列不同，则更新权重
         if not np.array_equal(tagseq, preseq):
             prev_tag, prev_pre = self.BOS, self.BOS
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
-                for cf in self.instantiate(wordseq, i, prev_tag, tag):
-                    if cf in self.fdict:
-                        self.W[self.fdict[cf]] += 1
-                for ef in self.instantiate(wordseq, i, prev_pre, pre):
-                    if ef in self.fdict:
-                        self.W[self.fdict[ef]] -= 1
+                cfcount = Counter(self.instantiate(wordseq, i, prev_tag, tag))
+                efcount = Counter(self.instantiate(wordseq, i, prev_pre, pre))
+                fcount = {f: cfcount[f] - efcount[f]
+                          for f in cfcount | efcount
+                          if f in self.fdict}
+
+                for f, v in fcount.items():
+                    fi = self.fdict[f]
+                    # 累加权重加上步长乘以权重
+                    self.V[fi] += (self.k - self.R[fi]) * self.W[fi]
+                    # 更新权重
+                    self.W[fi] += v
+                    # 更新时间戳记录
+                    self.R[fi] = self.k
                 prev_tag, prev_pre = tag, pre
-            self.V += self.W
+            self.k += 1
 
     def predict(self, wordseq, average=False):
         T = len(wordseq)
-        delta = np.zeros((T, self.N))
-        paths = np.zeros((T, self.N), dtype='int')
+        delta = np.zeros((T, self.n))
+        paths = np.zeros((T, self.n), dtype='int')
 
         fvectors = [self.instantiate(wordseq, 0, self.BOS, tag)
                     for tag in self.tags]
@@ -92,8 +121,8 @@ class GlobalLinearModel(object):
                             for prev_tag in self.tags]
                 scores = [self.score(fv, average)
                           for fv in fvectors] + delta[i - 1]
-                paths[i][j] = np.argmax(scores)
-                delta[i][j] = scores[paths[i][j]]
+                paths[i, j] = np.argmax(scores)
+                delta[i, j] = scores[paths[i, j]]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
@@ -170,36 +199,3 @@ class GlobalLinearModel(object):
         with open(file, 'rb') as f:
             hmm = pickle.load(f)
         return hmm
-
-
-if __name__ == '__main__':
-    train = preprocess('data/train.conll')
-    dev = preprocess('data/dev.conll')
-
-    all_words, all_tags = zip(*np.vstack(train))
-    tags = sorted(set(all_tags))
-
-    start = time.time()
-
-    print("Creating Global-Linear Model with %d tags" % (len(tags)))
-    glm = GlobalLinearModel(tags)
-
-    print("Using %d sentences to create the feature space" % (len(train)))
-    glm.create_feature_space(train)
-    print("The size of the feature space is %d" % glm.D)
-
-    average = len(sys.argv) > 1 and sys.argv[1] == 'average'
-    evaluations = []
-
-    print("Using online-training algorithm to train the model")
-    for epoch in glm.online(train):
-        print("Epoch %d" % epoch)
-        result = glm.evaluate(train, average=average)
-        print("\ttrain: %d / %d = %4f" % result)
-        result = glm.evaluate(dev, average=average)
-        print("\tdev: %d / %d = %4f" % result)
-        evaluations.append(result)
-
-    print("Successfully evaluated dev data using the model")
-    print("Precision: %d / %d = %4f" % max(evaluations, key=lambda x: x[2]))
-    print("%4fs elapsed" % (time.time() - start))
