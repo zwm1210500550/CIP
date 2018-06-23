@@ -51,8 +51,7 @@ class LinearModel(object):
         # 累加特征权重
         self.V = np.zeros((self.d, self.n))
 
-    def online(self, train, dev, file, epochs, interval,
-               average, shuffle):
+    def online(self, train, dev, file, epochs, interval, average, shuffle):
         max_e, max_precision = 0, 0.0
         # 迭代指定次数训练模型
         for epoch in range(epochs):
@@ -91,10 +90,9 @@ class LinearModel(object):
                 findices = [self.fdict[f] for f in self.instantiate(wordseq, i)
                             if f in self.fdict]
                 for fi in findices:
-                    wtp = self.W[fi, [ti, pi]]
-                    rtp = self.R[fi, [ti, pi]]
-                    # 累加权重加上步长乘以最近更新的权重
-                    self.V[fi, [ti, pi]] += (self.k - rtp) * wtp
+                    prev_w, prev_r = self.W[fi, [ti, pi]], self.R[fi, [ti, pi]]
+                    # 累加权重加上步长乘以权重
+                    self.V[fi, [ti, pi]] += (self.k - prev_r) * prev_w
                     # 更新权重
                     self.W[fi, [ti, pi]] += [1, -1]
                     # 更新时间戳记录

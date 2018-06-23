@@ -91,7 +91,7 @@ class LinearModel(object):
 
                 for f, v in fv.items():
                     fi = self.fdict[f]
-                    # 累加权重加上步长乘以最近更新的权重
+                    # 累加权重加上步长乘以权重
                     self.V[fi] += (self.k - self.R[fi]) * self.W[fi]
                     # 更新权重
                     self.W[fi] += v
