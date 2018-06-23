@@ -39,8 +39,8 @@ class GlobalLinearModel(object):
             wordseq, tagseq = zip(*sentence)
             prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
-                fvector = self.instantiate(wordseq, i, prev_tag)
-                feature_space.update(fvector)
+                fv = self.instantiate(wordseq, i, prev_tag)
+                feature_space.update(fv)
                 prev_tag = tag
 
         # 特征空间
@@ -128,14 +128,14 @@ class GlobalLinearModel(object):
         delta = np.zeros((T, self.n))
         paths = np.zeros((T, self.n), dtype='int')
 
-        fvector = self.instantiate(wordseq, 0, self.BOS)
-        delta[0] = self.score(fvector, average)
+        fv = self.instantiate(wordseq, 0, self.BOS)
+        delta[0] = self.score(fv, average)
 
         for i in range(1, T):
-            fvectors = [self.instantiate(wordseq, i, prev_tag)
-                        for prev_tag in self.tags]
+            fvs = [self.instantiate(wordseq, i, prev_tag)
+                   for prev_tag in self.tags]
             scores = np.array([delta[i - 1, j] + self.score(fv, average)
-                               for j, fv in enumerate(fvectors)])
+                               for j, fv in enumerate(fvs)])
             paths[i] = np.argmax(scores, axis=0)
             delta[i] = scores[paths[i], np.arange(self.n)]
         prev = np.argmax(delta[-1])

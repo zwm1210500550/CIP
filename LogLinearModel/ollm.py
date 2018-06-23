@@ -3,6 +3,7 @@
 import pickle
 import random
 import time
+from collections import defaultdict
 
 import numpy as np
 from scipy.misc import logsumexp
@@ -37,8 +38,8 @@ class LogLinearModel(object):
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
-                fvector = self.instantiate(wordseq, i)
-                feature_space.update(fvector)
+                fv = self.instantiate(wordseq, i)
+                feature_space.update(fv)
 
         # 特征空间
         self.epsilon = list(feature_space)
@@ -63,6 +64,7 @@ class LogLinearModel(object):
             # 随机打乱数据
             if shuffle:
                 random.shuffle(train)
+            # 按照指定大小对数据分割批次
             batches = [training_data[i:i + batch_size]
                        for i in range(0, len(training_data), batch_size)]
             for batch in batches:
@@ -85,26 +87,27 @@ class LogLinearModel(object):
               (max_precision, max_e))
 
     def update(self, batch, c, eta):
-        gradients = np.zeros((self.d, self.n))
+        gradients = defaultdict(float)
+
         for wordseq, i, tag in batch:
             ti = self.tdict[tag]
 
-            fvector = self.instantiate(wordseq, i)
-            scores = self.score(fvector)
+            fv = self.instantiate(wordseq, i)
+            fis = [self.fdict[f] for f in fv if f in self.fdict]
+            scores = self.score(fv)
             probs = np.exp(scores - logsumexp(scores))
 
-            for f in fvector:
-                if f in self.fdict:
-                    fi = self.fdict[f]
-                    gradients[fi][ti] += 1
-                    gradients[fi] -= probs
+            for fi in fis:
+                gradients[fi, ti] += 1
+                gradients[fi] -= probs
 
-        self.W -= eta * c * self.W
-        self.W += eta * gradients
+        self.W *= (1 - eta * c)
+        for k, v in gradients.items():
+            self.W[k] += eta * v
 
     def predict(self, wordseq, index):
-        fvector = self.instantiate(wordseq, index)
-        scores = self.score(fvector)
+        fv = self.instantiate(wordseq, index)
+        scores = self.score(fv)
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector):

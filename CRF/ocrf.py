@@ -41,8 +41,8 @@ class CRF(object):
             wordseq, tagseq = zip(*sentence)
             prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
-                fvector = self.instantiate(wordseq, i, prev_tag)
-                feature_space.update(fvector)
+                fv = self.instantiate(wordseq, i, prev_tag)
+                feature_space.update(fv)
                 prev_tag = tag
 
         # 特征空间
@@ -63,6 +63,7 @@ class CRF(object):
             # 随机打乱数据
             if shuffle:
                 random.shuffle(train)
+            # 按照指定大小对数据分割批次
             batches = [train[i:i + batch_size]
                        for i in range(0, len(train), batch_size)]
             for batch in batches:
@@ -102,16 +103,16 @@ class CRF(object):
             # print(logZ, self.logsumexp(
             #     beta[0] + self.score(self.instantiate(wordseq, 0, self.BOS))))
 
-            fvector = self.instantiate(wordseq, 0, self.BOS)
-            p = np.exp(self.score(fvector) + beta[0] - logZ)
-            for f in fvector:
+            fv = self.instantiate(wordseq, 0, self.BOS)
+            p = np.exp(self.score(fv) + beta[0] - logZ)
+            for f in fv:
                 if f in self.fdict:
                     gradients[self.fdict[f]] -= p
 
             for i in range(1, len(tagseq)):
-                fvectors = [self.instantiate(wordseq, i, prev_tag)
-                            for prev_tag in self.tags]
-                for j, fv in enumerate(fvectors):
+                fvs = [self.instantiate(wordseq, i, prev_tag)
+                       for prev_tag in self.tags]
+                for j, fv in enumerate(fvs):
                     score = self.score(fv)
                     p = np.exp(score + alpha[i - 1, j] + beta[i] - logZ)
                     for f in fv:
@@ -125,13 +126,13 @@ class CRF(object):
         T = len(wordseq)
         alpha = np.zeros((T, self.n))
 
-        fvector = self.instantiate(wordseq, 0, self.BOS)
-        alpha[0] = self.score(fvector)
+        fv = self.instantiate(wordseq, 0, self.BOS)
+        alpha[0] = self.score(fv)
 
         for i in range(1, T):
-            fvectors = [self.instantiate(wordseq, i, prev_tag)
-                        for prev_tag in self.tags]
-            scores = np.column_stack([self.score(fv) for fv in fvectors])
+            fvs = [self.instantiate(wordseq, i, prev_tag)
+                   for prev_tag in self.tags]
+            scores = np.column_stack([self.score(fv) for fv in fvs])
             alpha[i] = logsumexp(scores + alpha[i - 1], axis=1)
         return alpha
 
@@ -140,9 +141,9 @@ class CRF(object):
         beta = np.zeros((T, self.n))
 
         for i in reversed(range(T - 1)):
-            fvectors = [self.instantiate(wordseq, i + 1, prev_tag)
-                        for prev_tag in self.tags]
-            scores = np.array([self.score(fv) for fv in fvectors])
+            fvs = [self.instantiate(wordseq, i + 1, prev_tag)
+                   for prev_tag in self.tags]
+            scores = np.array([self.score(fv) for fv in fvs])
             beta[i] = logsumexp(scores + beta[i + 1], axis=1)
         return beta
 
@@ -151,14 +152,14 @@ class CRF(object):
         delta = np.zeros((T, self.n))
         paths = np.zeros((T, self.n), dtype='int')
 
-        fvector = self.instantiate(wordseq, 0, self.BOS)
-        delta[0] = self.score(fvector)
+        fv = self.instantiate(wordseq, 0, self.BOS)
+        delta[0] = self.score(fv)
 
         for i in range(1, T):
-            fvectors = [self.instantiate(wordseq, i, prev_tag)
-                        for prev_tag in self.tags]
+            fvs = [self.instantiate(wordseq, i, prev_tag)
+                   for prev_tag in self.tags]
             scores = np.array([delta[i - 1][j] + self.score(fv)
-                               for j, fv in enumerate(fvectors)])
+                               for j, fv in enumerate(fvs)])
             paths[i] = np.argmax(scores, axis=0)
             delta[i] = scores[paths[i], np.arange(self.n)]
         prev = np.argmax(delta[-1])

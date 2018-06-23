@@ -35,8 +35,8 @@ class LinearModel(object):
         for sentence in sentences:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
-                fvector = self.instantiate(wordseq, i, tag)
-                feature_space.update(fvector)
+                fv = self.instantiate(wordseq, i, tag)
+                feature_space.update(fv)
 
         # 特征空间
         self.epsilon = list(feature_space)
@@ -103,9 +103,9 @@ class LinearModel(object):
                 self.k += 1
 
     def predict(self, wordseq, index, average=False):
-        fvectors = [self.instantiate(wordseq, index, tag)
-                    for tag in self.tags]
-        scores = [self.score(fv, average=average) for fv in fvectors]
+        fvs = [self.instantiate(wordseq, index, tag)
+               for tag in self.tags]
+        scores = [self.score(fv, average=average) for fv in fvs]
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector, average=False):
