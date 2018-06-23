@@ -30,7 +30,7 @@ class LogLinearModel(object):
         # 词性对应索引的字典
         self.tdict = {t: i for i, t in enumerate(tags)}
 
-        self.N = len(self.tags)
+        self.n = len(self.tags)
 
     def create_feature_space(self, sentences):
         feature_space = set()
@@ -45,29 +45,47 @@ class LogLinearModel(object):
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
-        self.D = len(self.epsilon)
+        self.d = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros((self.D, self.N))
+        self.W = np.zeros((self.d, self.n))
 
-    def SGD(self, sentences, batch_size=50, c=0.0001, eta=0.5, epochs=20):
+    def SGD(self, train, dev, file, epochs, batch_size, c, eta,
+            interval, shuffle):
+        max_e, max_precision = 0, 0.0
         training_data = []
-        for sentence in sentences:
+        for sentence in train:
             wordseq, tagseq = zip(*sentence)
             for i, tag in enumerate(tagseq):
                 training_data.append((wordseq, i, tag))
         for epoch in range(epochs):
-            random.shuffle(training_data)
+            start = time.time()
+            # 随机打乱数据
+            if shuffle:
+                random.shuffle(train)
             batches = [training_data[i:i + batch_size]
                        for i in range(0, len(training_data), batch_size)]
             for batch in batches:
                 # 根据批次数据更新权重
                 self.update(batch, c, max(eta, 0.00001))
                 eta *= 0.999
-            yield epoch
+
+            print("Epoch %d / %d: " % (epoch, epochs))
+            result = self.evaluate(train)
+            print("\ttrain: %d / %d = %4f" % result)
+            tp, total, precision = self.evaluate(dev)
+            print("\tdev: %d / %d = %4f" % (tp, total, precision))
+            print("\t%4f elapsed" % (time.time() - start))
+            if precision > max_precision:
+                self.dump(file)
+                max_e, max_precision = epoch, precision
+            elif epoch - max_e > interval:
+                break
+        print("max precision of dev is %4f at epoch %d" %
+              (max_precision, max_e))
 
     def update(self, batch, c, eta):
-        gradients = np.zeros((self.D, self.N))
+        gradients = np.zeros((self.d, self.n))
         for wordseq, i, tag in batch:
             ti = self.tdict[tag]
 
@@ -151,35 +169,3 @@ class LogLinearModel(object):
         with open(file, 'rb') as f:
             hmm = pickle.load(f)
         return hmm
-
-
-if __name__ == '__main__':
-    train = preprocess('data/train.conll')
-    dev = preprocess('data/dev.conll')
-
-    all_words, all_tags = zip(*np.vstack(train))
-    tags = sorted(set(all_tags))
-
-    start = time.time()
-
-    print("Creating Log-Linear Model with %d tags" % (len(tags)))
-    lm = LogLinearModel(tags)
-
-    print("Using %d sentences to create the feature space" % (len(train)))
-    lm.create_feature_space(train)
-    print("The size of the feature space is %d" % lm.D)
-
-    evaluations = []
-
-    print("Using SGD algorithm to train the model")
-    for epoch in lm.SGD(train):
-        print("Epoch %d" % epoch)
-        result = lm.evaluate(train)
-        print("\ttrain: %d / %d = %4f" % result)
-        result = lm.evaluate(dev)
-        print("\tdev: %d / %d = %4f" % result)
-        evaluations.append(result)
-
-    print("Successfully evaluated dev data using the model")
-    print("Precision: %d / %d = %4f" % max(evaluations, key=lambda x: x[2]))
-    print("%4fs elapsed" % (time.time() - start))
