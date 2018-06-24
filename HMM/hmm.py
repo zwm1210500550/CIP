@@ -92,8 +92,8 @@ class HMM(object):
         for sentence in sentences:
             total += len(sentence)
             wordseq, tagseq = zip(*sentence)
-            preseq = self.predict(wordseq)
-            tp += sum([t == p for t, p in zip(tagseq, preseq)])
+            preseq = np.array(self.predict(wordseq))
+            tp += np.sum(tagseq == preseq)
         precision = tp / total
         return tp, total, precision
 

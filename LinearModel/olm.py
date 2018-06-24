@@ -70,7 +70,8 @@ class LinearModel(object):
             print("\ttrain: %d / %d = %4f" % result)
             tp, total, precision = self.evaluate(dev, average=average)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
-            print("\t%4f elapsed" % (time.time() - start))
+            print("\t%4fs elapsed" % (time.time() - start))
+            # 保存效果最好的模型
             if precision > max_precision:
                 self.dump(file)
                 max_e, max_precision = epoch, precision
@@ -158,9 +159,9 @@ class LinearModel(object):
         for sentence in sentences:
             total += len(sentence)
             wordseq, tagseq = zip(*sentence)
-            preseq = [self.predict(wordseq, i, average)
-                      for i in range(len(wordseq))]
-            tp += sum([t == p for t, p in zip(tagseq, preseq)])
+            preseq = np.array([self.predict(wordseq, i, average)
+                               for i in range(len(wordseq))])
+            tp += np.sum(tagseq == preseq)
         precision = tp / total
         return tp, total, precision
 
