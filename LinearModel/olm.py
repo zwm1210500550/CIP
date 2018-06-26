@@ -14,10 +14,11 @@ def preprocess(fdata):
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
-            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            wordseq, tagseq = zip(*[l.split()[1:4:2] for l in lines[start:i]])
             start = i + 1
             while start < len(lines) and len(lines[start]) <= 1:
                 start += 1
+            sentences.append((wordseq, tagseq))
     return sentences
 
 
@@ -32,15 +33,12 @@ class LinearModel(object):
         self.n = len(self.tags)
 
     def create_feature_space(self, sentences):
-        feature_space = set()
-        for sentence in sentences:
-            wordseq, tagseq = zip(*sentence)
-            for i, tag in enumerate(tagseq):
-                fv = self.instantiate(wordseq, i)
-                feature_space.update(fv)
-
         # 特征空间
-        self.epsilon = list(feature_space)
+        self.epsilon = list({
+            f for wordseq, tagseq in sentences
+            for i, tag in enumerate(tagseq)
+            for f in self.instantiate(wordseq, i)
+        })
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
@@ -81,7 +79,7 @@ class LinearModel(object):
               (max_precision, max_e))
 
     def update(self, batch):
-        wordseq, tagseq = zip(*batch)
+        wordseq, tagseq = batch
         # 根据单词序列的正确词性更新权重
         for i, tag in enumerate(tagseq):
             # 根据现有权重向量预测词性
@@ -156,9 +154,8 @@ class LinearModel(object):
     def evaluate(self, sentences, average=False):
         tp, total = 0, 0
 
-        for sentence in sentences:
-            total += len(sentence)
-            wordseq, tagseq = zip(*sentence)
+        for wordseq, tagseq in sentences:
+            total += len(wordseq)
             preseq = np.array([self.predict(wordseq, i, average)
                                for i in range(len(wordseq))])
             tp += np.sum(tagseq == preseq)

@@ -15,10 +15,11 @@ def preprocess(fdata):
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
-            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            wordseq, tagseq = zip(*[l.split()[1:4:2] for l in lines[start:i]])
             start = i + 1
             while start < len(lines) and len(lines[start]) <= 1:
                 start += 1
+            sentences.append((wordseq, tagseq))
     return sentences
 
 
@@ -31,15 +32,12 @@ class LinearModel(object):
         self.n = len(self.tags)
 
     def create_feature_space(self, sentences):
-        feature_space = set()
-        for sentence in sentences:
-            wordseq, tagseq = zip(*sentence)
-            for i, tag in enumerate(tagseq):
-                fv = self.instantiate(wordseq, i, tag)
-                feature_space.update(fv)
-
         # 特征空间
-        self.epsilon = list(feature_space)
+        self.epsilon = list({
+            f for wordseq, tagseq in sentences
+            for i, tag in enumerate(tagseq)
+            for f in self.instantiate(wordseq, i, tag)
+        })
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
@@ -80,20 +78,19 @@ class LinearModel(object):
               (max_precision, max_e))
 
     def update(self, batch):
-        wordseq, tagseq = zip(*batch)
+        wordseq, tagseq = batch
         # 根据单词序列的正确词性更新权重
         for i, tag in enumerate(tagseq):
             # 根据现有权重向量预测词性
             pre = self.predict(wordseq, i)
             # 如果预测词性与正确词性不同，则更新权重
             if tag != pre:
-                cfcount = Counter(self.instantiate(wordseq, i, tag))
-                efcount = Counter(self.instantiate(wordseq, i, pre))
-                fcount = {f: cfcount[f] - efcount[f]
-                          for f in cfcount | efcount
-                          if f in self.fdict}
+                cfreqs = Counter(self.instantiate(wordseq, i, tag))
+                efreqs = Counter(self.instantiate(wordseq, i, pre))
+                freqs = {f: cfreqs[f] - efreqs[f] for f in cfreqs | efreqs
+                         if f in self.fdict}
 
-                for f, v in fcount.items():
+                for f, v in freqs.items():
                     fi = self.fdict[f]
                     # 累加权重加上步长乘以权重
                     self.V[fi] += (self.k - self.R[fi]) * self.W[fi]
@@ -112,13 +109,13 @@ class LinearModel(object):
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.V[self.fdict[f]]
-                      for f in fvector if f in self.fdict]
+            score = sum([self.V[self.fdict[f]]
+                         for f in fvector if f in self.fdict])
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.W[self.fdict[f]]
-                      for f in fvector if f in self.fdict]
-        return np.sum(scores)
+            score = sum([self.W[self.fdict[f]]
+                         for f in fvector if f in self.fdict])
+        return score
 
     def instantiate(self, wordseq, index, tag):
         word = wordseq[index]
@@ -159,9 +156,8 @@ class LinearModel(object):
     def evaluate(self, sentences, average=False):
         tp, total = 0, 0
 
-        for sentence in sentences:
-            total += len(sentence)
-            wordseq, tagseq = zip(*sentence)
+        for wordseq, tagseq in sentences:
+            total += len(wordseq)
             preseq = np.array([self.predict(wordseq, i, average)
                                for i in range(len(wordseq))])
             tp += np.sum(tagseq == preseq)

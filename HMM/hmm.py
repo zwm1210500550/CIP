@@ -12,10 +12,11 @@ def preprocess(fdata):
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
-            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            wordseq, tagseq = zip(*[l.split()[1:4:2] for l in lines[start:i]])
             start = i + 1
             while start < len(lines) and len(lines[start]) <= 1:
                 start += 1
+            sentences.append((wordseq, tagseq))
     return sentences
 
 
@@ -38,9 +39,9 @@ class HMM(object):
         trans_matrix = np.zeros((self.n + 1, self.n + 1))
         emit_matrix = np.zeros((self.m + 1, self.n))
 
-        for sentence in sentences:
+        for wordseq, tagseq in sentences:
             prev = -1
-            for word, tag in sentence:
+            for word, tag in zip(wordseq, tagseq):
                 trans_matrix[self.tdict[tag], prev] += 1
                 emit_matrix[self.wdict[word], self.tdict[tag]] += 1
                 prev = self.tdict[tag]
@@ -89,9 +90,8 @@ class HMM(object):
     def evaluate(self, sentences):
         tp, total = 0, 0
 
-        for sentence in sentences:
-            total += len(sentence)
-            wordseq, tagseq = zip(*sentence)
+        for wordseq, tagseq in sentences:
+            total += len(wordseq)
             preseq = np.array(self.predict(wordseq))
             tp += np.sum(tagseq == preseq)
         precision = tp / total

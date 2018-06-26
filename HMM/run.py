@@ -22,8 +22,8 @@ config = Config(args.bigdata)
 train = preprocess(config.ftrain)
 dev = preprocess(config.fdev)
 
-all_words, all_tags = zip(*np.vstack(train))
-words, tags = sorted(set(all_words)), sorted(set(all_tags))
+wordseqs, tagseqs = zip(*train)
+words, tags = sorted(set(np.hstack(wordseqs))), sorted(set(np.hstack(tagseqs)))
 
 start = time.time()
 
