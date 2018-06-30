@@ -15,10 +15,11 @@ def preprocess(fdata):
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
-            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            wordseq, tagseq = zip(*[l.split()[1:4:2] for l in lines[start:i]])
             start = i + 1
             while start < len(lines) and len(lines[start]) <= 1:
                 start += 1
+            sentences.append((wordseq, tagseq))
     return sentences
 
 
@@ -33,17 +34,16 @@ class GlobalLinearModel(object):
         self.n = len(self.tags)
 
     def create_feature_space(self, sentences):
-        feature_space = set()
-        for sentence in sentences:
-            wordseq, tagseq = zip(*sentence)
-            prev_tag = self.BOS
-            for i, tag in enumerate(tagseq):
-                fv = self.instantiate(wordseq, i, prev_tag, tag)
-                feature_space.update(fv)
-                prev_tag = tag
-
         # 特征空间
-        self.epsilon = list(feature_space)
+        self.epsilon = list({
+            f for wordseq, tagseq in sentences
+            for f in set(
+                self.instantiate(wordseq, 0, self.BOS, tagseq[0])
+            ).union(*[
+                self.instantiate(wordseq, i, tagseq[i - 1], tag)
+                for i, tag in enumerate(tagseq[1:], 1)
+            ])
+        })
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
@@ -56,6 +56,7 @@ class GlobalLinearModel(object):
 
     def online(self, train, dev, file, epochs, interval, average, shuffle):
         max_e, max_precision = 0, 0.0
+        # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = time.time()
             # 随机打乱数据
@@ -72,7 +73,8 @@ class GlobalLinearModel(object):
             print("\ttrain: %d / %d = %4f" % result)
             tp, total, precision = self.evaluate(dev, average=average)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
-            print("\t%4f elapsed" % (time.time() - start))
+            print("\t%4fs elapsed" % (time.time() - start))
+            # 保存效果最好的模型
             if precision > max_precision:
                 self.dump(file)
                 max_e, max_precision = epoch, precision
@@ -82,20 +84,19 @@ class GlobalLinearModel(object):
               (max_precision, max_e))
 
     def update(self, batch):
-        wordseq, tagseq = zip(*batch)
+        wordseq, tagseq = batch
         # 根据现有权重向量预测词性序列
         preseq = self.predict(wordseq)
         # 如果预测词性序列与正确词性序列不同，则更新权重
         if not np.array_equal(tagseq, preseq):
             prev_tag, prev_pre = self.BOS, self.BOS
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
-                cfcount = Counter(self.instantiate(wordseq, i, prev_tag, tag))
-                efcount = Counter(self.instantiate(wordseq, i, prev_pre, pre))
-                fcount = {f: cfcount[f] - efcount[f]
-                          for f in cfcount | efcount
-                          if f in self.fdict}
+                cfreqs = Counter(self.instantiate(wordseq, i, prev_tag, tag))
+                efreqs = Counter(self.instantiate(wordseq, i, prev_pre, pre))
+                freqs = {f: cfreqs[f] - efreqs[f] for f in cfreqs | efreqs
+                         if f in self.fdict}
 
-                for f, v in fcount.items():
+                for f, v in freqs.items():
                     fi = self.fdict[f]
                     # 累加权重加上步长乘以权重
                     self.V[fi] += (self.k - self.R[fi]) * self.W[fi]
@@ -133,13 +134,13 @@ class GlobalLinearModel(object):
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.V[self.fdict[f]]
-                      for f in fvector if f in self.fdict]
+            score = sum([self.V[self.fdict[f]]
+                         for f in fvector if f in self.fdict])
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.W[self.fdict[f]]
-                      for f in fvector if f in self.fdict]
-        return np.sum(scores)
+            score = sum([self.W[self.fdict[f]]
+                         for f in fvector if f in self.fdict])
+        return score
 
     def instantiate(self, wordseq, index, prev_tag, tag):
         word = wordseq[index]
@@ -181,11 +182,10 @@ class GlobalLinearModel(object):
     def evaluate(self, sentences, average=False):
         tp, total = 0, 0
 
-        for sentence in sentences:
-            total += len(sentence)
-            wordseq, tagseq = zip(*sentence)
-            preseq = self.predict(wordseq, average)
-            tp += sum([t == p for t, p in zip(tagseq, preseq)])
+        for wordseq, tagseq in sentences:
+            total += len(wordseq)
+            preseq = np.array(self.predict(wordseq, average))
+            tp += np.sum(tagseq == preseq)
         precision = tp / total
         return tp, total, precision
 

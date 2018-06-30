@@ -2,6 +2,7 @@
 
 import pickle
 import time
+from collections import defaultdict
 
 import numpy as np
 from scipy.misc import logsumexp
@@ -14,10 +15,11 @@ def preprocess(fdata):
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
-            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            wordseq, tagseq = zip(*[l.split()[1:4:2] for l in lines[start:i]])
             start = i + 1
             while start < len(lines) and len(lines[start]) <= 1:
                 start += 1
+            sentences.append((wordseq, tagseq))
     return sentences
 
 
@@ -34,17 +36,16 @@ class CRF(object):
         self.n = len(self.tags)
 
     def create_feature_space(self, sentences):
-        feature_space = set()
-        for sentence in sentences:
-            wordseq, tagseq = zip(*sentence)
-            prev_tag = self.BOS
-            for i, tag in enumerate(tagseq):
-                fv = self.instantiate(wordseq, i, prev_tag, tag)
-                feature_space.update(fv)
-                prev_tag = tag
-
         # 特征空间
-        self.epsilon = list(feature_space)
+        self.epsilon = list({
+            f for wordseq, tagseq in sentences
+            for f in set(
+                self.instantiate(wordseq, 0, self.BOS, tagseq[0])
+            ).union(*[
+                self.instantiate(wordseq, i, tagseq[i - 1], tag)
+                for i, tag in enumerate(tagseq[1:], 1)
+            ])
+        })
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
@@ -53,9 +54,11 @@ class CRF(object):
         # 特征权重
         self.W = np.zeros(self.d)
 
-    def SGD(self, train, dev, file, epochs, batch_size, c, eta,
-            interval, shuffle):
+    def SGD(self, train, dev, file,
+            epochs, batch_size, c, eta, interval,
+            shuffle):
         max_e, max_precision = 0, 0.0
+        # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = time.time()
             # 随机打乱数据
@@ -64,17 +67,17 @@ class CRF(object):
             # 按照指定大小对数据分割批次
             batches = [train[i:i + batch_size]
                        for i in range(0, len(train), batch_size)]
+            # 根据批次数据更新权重
             for batch in batches:
-                # 根据批次数据更新权重
                 self.update(batch, c, max(eta, 0.00001))
                 # eta *= 0.999
 
             print("Epoch %d / %d: " % (epoch, epochs))
-            result = self.evaluate(train)
-            print("\ttrain: %d / %d = %4f" % result)
+            print("\ttrain: %d / %d = %4f" % self.evaluate(train))
             tp, total, precision = self.evaluate(dev)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
-            print("\t%4f elapsed" % (time.time() - start))
+            print("\t%4fs elapsed" % (time.time() - start))
+            # 保存效果最好的模型
             if precision > max_precision:
                 self.dump(file)
                 max_e, max_precision = epoch, precision
@@ -84,10 +87,9 @@ class CRF(object):
               (max_precision, max_e))
 
     def update(self, batch, c, eta):
-        gradients = np.zeros(self.d)
-        for sentence in batch:
-            wordseq, tagseq = zip(*sentence)
+        gradients = defaultdict(float)
 
+        for wordseq, tagseq in batch:
             prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
                 for f in self.instantiate(wordseq, i, prev_tag, tag):
@@ -119,7 +121,8 @@ class CRF(object):
                                 gradients[self.fdict[f]] -= p
 
         # self.W -= eta * c * self.W
-        self.W += eta * gradients
+        for fi, v in gradients.items():
+            self.W[fi] += eta * v
 
     def forward(self, wordseq):
         T = len(wordseq)
@@ -174,9 +177,9 @@ class CRF(object):
         return [self.tags[i] for i in reversed(predict)]
 
     def score(self, fvector):
-        scores = [self.W[self.fdict[f]]
-                  for f in fvector if f in self.fdict]
-        return np.sum(scores)
+        score = sum([self.W[self.fdict[f]]
+                     for f in fvector if f in self.fdict])
+        return score
 
     def instantiate(self, wordseq, index, prev_tag, tag):
         word = wordseq[index]
@@ -218,11 +221,10 @@ class CRF(object):
     def evaluate(self, sentences):
         tp, total = 0, 0
 
-        for sentence in sentences:
-            total += len(sentence)
-            wordseq, tagseq = zip(*sentence)
-            preseq = self.predict(wordseq)
-            tp += sum([t == p for t, p in zip(tagseq, preseq)])
+        for wordseq, tagseq in sentences:
+            total += len(wordseq)
+            preseq = np.array(self.predict(wordseq))
+            tp += np.sum(tagseq == preseq)
         precision = tp / total
         return tp, total, precision
 

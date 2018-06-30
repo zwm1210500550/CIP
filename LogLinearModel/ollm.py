@@ -16,10 +16,11 @@ def preprocess(fdata):
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
-            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            wordseq, tagseq = zip(*[l.split()[1:4:2] for l in lines[start:i]])
             start = i + 1
             while start < len(lines) and len(lines[start]) <= 1:
                 start += 1
+            sentences.append((wordseq, tagseq))
     return sentences
 
 
@@ -34,15 +35,12 @@ class LogLinearModel(object):
         self.n = len(self.tags)
 
     def create_feature_space(self, sentences):
-        feature_space = set()
-        for sentence in sentences:
-            wordseq, tagseq = zip(*sentence)
-            for i, tag in enumerate(tagseq):
-                fv = self.instantiate(wordseq, i)
-                feature_space.update(fv)
-
         # 特征空间
-        self.epsilon = list(feature_space)
+        self.epsilon = list({
+            f for wordseq, tagseq in sentences
+            for i, tag in enumerate(tagseq)
+            for f in self.instantiate(wordseq, i)
+        })
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
         # 特征空间维度
@@ -51,33 +49,37 @@ class LogLinearModel(object):
         # 特征权重
         self.W = np.zeros((self.d, self.n))
 
-    def SGD(self, train, dev, file, epochs, batch_size, c, eta,
-            interval, shuffle):
+    def SGD(self, train, dev, file,
+            epochs, batch_size, c, eta, decay, interval,
+            anneal, regularize, shuffle):
         max_e, max_precision = 0, 0.0
-        training_data = []
-        for sentence in train:
-            wordseq, tagseq = zip(*sentence)
-            for i, tag in enumerate(tagseq):
-                training_data.append((wordseq, i, tag))
+        training_data = [(wordseq, i, tag)
+                         for wordseq, tagseq in train
+                         for i, tag in enumerate(tagseq)]
+        # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = time.time()
             # 随机打乱数据
             if shuffle:
-                random.shuffle(train)
+                random.shuffle(training_data)
+            # 设置L2正则化系数
+            if not regularize:
+                c = 0
+            # 设置学习速率衰减
+            eta = 1 / (1 + decay * epoch) * eta if anneal else 1
             # 按照指定大小对数据分割批次
             batches = [training_data[i:i + batch_size]
                        for i in range(0, len(training_data), batch_size)]
+            # 根据批次数据更新权重
             for batch in batches:
-                # 根据批次数据更新权重
-                self.update(batch, c, max(eta, 0.00001))
-                eta *= 0.999
+                self.update(batch, c, eta)
 
             print("Epoch %d / %d: " % (epoch, epochs))
-            result = self.evaluate(train)
-            print("\ttrain: %d / %d = %4f" % result)
+            print("\ttrain: %d / %d = %4f" % self.evaluate(train))
             tp, total, precision = self.evaluate(dev)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
-            print("\t%4f elapsed" % (time.time() - start))
+            print("\t%4fs elapsed" % (time.time() - start))
+            # 保存效果最好的模型
             if precision > max_precision:
                 self.dump(file)
                 max_e, max_precision = epoch, precision
@@ -93,17 +95,19 @@ class LogLinearModel(object):
             ti = self.tdict[tag]
 
             fv = self.instantiate(wordseq, i)
-            fis = [self.fdict[f] for f in fv if f in self.fdict]
             scores = self.score(fv)
             probs = np.exp(scores - logsumexp(scores))
 
-            for fi in fis:
-                gradients[fi, ti] += 1
-                gradients[fi] -= probs
+            for f in fv:
+                if f in self.fdict:
+                    fi = self.fdict[f]
+                    gradients[fi, ti] += 1
+                    gradients[fi] -= probs
 
-        self.W *= (1 - eta * c)
-        for k, v in gradients.items():
-            self.W[k] += eta * v
+        if c != 0:
+            self.W *= (1 - eta * c)
+        for fi, v in gradients.items():
+            self.W[fi] += eta * v
 
     def predict(self, wordseq, index):
         fv = self.instantiate(wordseq, index)
@@ -111,8 +115,8 @@ class LogLinearModel(object):
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector):
-        scores = [self.W[self.fdict[f]]
-                  for f in fvector if f in self.fdict]
+        scores = np.array([self.W[self.fdict[f]]
+                           for f in fvector if f in self.fdict])
         return np.sum(scores, axis=0)
 
     def instantiate(self, wordseq, index):
@@ -154,12 +158,11 @@ class LogLinearModel(object):
     def evaluate(self, sentences):
         tp, total = 0, 0
 
-        for sentence in sentences:
-            total += len(sentence)
-            wordseq, tagseq = zip(*sentence)
-            preseq = [self.predict(wordseq, i)
-                      for i in range(len(wordseq))]
-            tp += sum([t == p for t, p in zip(tagseq, preseq)])
+        for wordseq, tagseq in sentences:
+            total += len(wordseq)
+            preseq = np.array([self.predict(wordseq, i)
+                               for i in range(len(wordseq))])
+            tp += np.sum(tagseq == preseq)
         precision = tp / total
         return tp, total, precision
 

@@ -13,8 +13,12 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('-b', action='store_true', default=False,
                     dest='bigdata', help='use big data')
+parser.add_argument('--anneal', '-a', action='store_true', default=False,
+                    dest='anneal', help='use simulated annealing')
 parser.add_argument('--optimize', '-o', action='store_true', default=False,
                     dest='optimize', help='use feature extracion optimization')
+parser.add_argument('--regularize', '-r', action='store_true', default=False,
+                    dest='regularize', help='use L2 regularization')
 parser.add_argument('--shuffle', '-s', action='store_true', default=False,
                     dest='shuffle', help='shuffle the data at each epoch')
 args = parser.parse_args()
@@ -30,8 +34,8 @@ config = Config(args.bigdata)
 train = preprocess(config.ftrain)
 dev = preprocess(config.fdev)
 
-all_words, all_tags = zip(*np.vstack(train))
-tags = sorted(set(all_tags))
+wordseqs, tagseqs = zip(*train)
+tags = sorted(set(np.hstack(tagseqs)))
 
 start = time.time()
 
@@ -48,7 +52,10 @@ llm.SGD(train, dev, config.llmpkl,
         batch_size=config.batch_size,
         c=config.c,
         eta=config.eta,
+        decay=config.decay,
         interval=config.interval,
+        anneal=args.anneal,
+        regularize=args.regularize,
         shuffle=args.shuffle)
 
 if args.bigdata:

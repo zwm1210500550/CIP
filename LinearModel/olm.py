@@ -86,8 +86,8 @@ class LinearModel(object):
             pre = self.predict(wordseq, i)
             # 如果预测词性与正确词性不同，则更新权重
             if tag != pre:
-                ti, pi = self.tdict[tag], self.tdict[pre]
                 fv = self.instantiate(wordseq, i)
+                ti, pi = self.tdict[tag], self.tdict[pre]
                 fis = [self.fdict[f] for f in fv if f in self.fdict]
                 for fi in fis:
                     prev_w, prev_r = self.W[fi, [ti, pi]], self.R[fi, [ti, pi]]
@@ -107,12 +107,12 @@ class LinearModel(object):
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.V[self.fdict[f]]
-                      for f in fvector if f in self.fdict]
+            scores = np.array([self.V[self.fdict[f]]
+                               for f in fvector if f in self.fdict])
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.W[self.fdict[f]]
-                      for f in fvector if f in self.fdict]
+            scores = np.array([self.W[self.fdict[f]]
+                               for f in fvector if f in self.fdict])
         return np.sum(scores, axis=0)
 
     def instantiate(self, wordseq, index):
