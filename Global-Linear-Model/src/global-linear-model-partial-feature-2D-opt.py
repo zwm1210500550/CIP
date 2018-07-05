@@ -165,7 +165,7 @@ class global_liner_model(object):
                 self.create_bigram_feature(prev_tag)
                 for prev_tag in self.tags
             ]
-            scores = [max_score[i - 1][j] + self.score(fs,averaged) + unigram_scores
+            scores = [max_score[i - 1][j] + self.score(fs, averaged) + unigram_scores
                       for j, fs in enumerate(bigram_features)]
             paths[i] = np.argmax(scores, axis=0)
             max_score[i] = np.max(scores, axis=0)
@@ -264,7 +264,7 @@ class global_liner_model(object):
                         self.v[i][j] += (current_update_times - last_update_times - 1) * last_w_value + self.weights[i][
                             j]
 
-            train_correct_num, total_num, train_precision = self.evaluate(self.train_data, averaged)
+            train_correct_num, total_num, train_precision = self.evaluate(self.train_data, averaged=False)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
             print('\t' + 'dev准确率：%d / %d = %f' % (dev_correct_num, dev_num, dev_precision), flush=True)

@@ -224,4 +224,4 @@ if __name__ == '__main__':
     lm.create_feature_space()
     lm.online_train(iterator, averaged, shuffle, exitor)
     endtime = datetime.datetime.now()
-    print("executing time is " + str((endtime - starttime).seconds) + " s")
+    print("executing time is " + str((endtime - starttime)))
