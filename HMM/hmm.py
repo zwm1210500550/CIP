@@ -12,10 +12,11 @@ def preprocess(fdata):
         lines = [line for line in train]
     for i, line in enumerate(lines):
         if len(lines[i]) <= 1:
-            sentences.append([l.split()[1:4:2] for l in lines[start:i]])
+            wordseq, tagseq = zip(*[l.split()[1:4:2] for l in lines[start:i]])
             start = i + 1
             while start < len(lines) and len(lines[start]) <= 1:
                 start += 1
+            sentences.append((wordseq, tagseq))
     return sentences
 
 
@@ -38,12 +39,13 @@ class HMM(object):
         trans_matrix = np.zeros((self.n + 1, self.n + 1))
         emit_matrix = np.zeros((self.m + 1, self.n))
 
-        for sentence in sentences:
+        for wordseq, tagseq in sentences:
             prev = -1
-            for word, tag in sentence:
-                trans_matrix[self.tdict[tag], prev] += 1
-                emit_matrix[self.wdict[word], self.tdict[tag]] += 1
-                prev = self.tdict[tag]
+            for word, tag in zip(wordseq, tagseq):
+                ti, wi = self.tdict[tag], self.wdict[word]
+                trans_matrix[ti, prev] += 1
+                emit_matrix[wi, ti] += 1
+                prev = ti
             trans_matrix[self.n, prev] += 1
         trans_matrix = self.smooth(trans_matrix, alpha)
 
@@ -68,19 +70,18 @@ class HMM(object):
         T = len(wordseq)
         delta = np.zeros((T, self.n))
         paths = np.zeros((T, self.n), dtype='int')
-        indices = [self.wdict[w] if w in self.wdict else -1 for w in wordseq]
+        wis = [self.wdict[w] if w in self.wdict else -1 for w in wordseq]
 
-        delta[0] = self.BOS + self.B[indices[0]]
+        delta[0] = self.BOS + self.B[wis[0]]
 
         for i in range(1, T):
-            for j in range(self.n):
-                probs = delta[i - 1] + self.A[j]
-                paths[i, j] = np.argmax(probs)
-                delta[i, j] = probs[paths[i, j]] + self.B[indices[i], j]
+            probs = self.A + delta[i - 1]
+            paths[i] = np.argmax(probs, axis=1)
+            delta[i] = probs[np.arange(self.n), paths[i]] + self.B[wis[i]]
         prev = np.argmax(delta[-1] + self.EOS)
 
         predict = [prev]
-        for i in range(T - 1, 0, -1):
+        for i in reversed(range(1, T)):
             prev = paths[i, prev]
             predict.append(prev)
         preseq = [self.tags[i] for i in reversed(predict)]
@@ -89,9 +90,8 @@ class HMM(object):
     def evaluate(self, sentences):
         tp, total = 0, 0
 
-        for sentence in sentences:
-            total += len(sentence)
-            wordseq, tagseq = zip(*sentence)
+        for wordseq, tagseq in sentences:
+            total += len(wordseq)
             preseq = np.array(self.predict(wordseq))
             tp += np.sum(tagseq == preseq)
         precision = tp / total
