@@ -105,14 +105,10 @@ class LinearModel(object):
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector, average=False):
-        # 计算特征对应累加权重的得分
-        if average:
-            scores = np.array([self.V[self.fdict[f]]
-                               for f in fvector if f in self.fdict])
-        # 计算特征对应未累加权重的得分
-        else:
-            scores = np.array([self.W[self.fdict[f]]
-                               for f in fvector if f in self.fdict])
+        # 获取特征索引
+        fis = [self.fdict[f] for f in fvector if f in self.fdict]
+        # 计算特征对应权重得分
+        scores = self.V[fis] if average else self.W[fis]
         return np.sum(scores, axis=0)
 
     def instantiate(self, wordseq, index):

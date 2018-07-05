@@ -87,17 +87,17 @@ class LinearModel(object):
             if tag != pre:
                 cfreqs = Counter(self.instantiate(wordseq, i, tag))
                 efreqs = Counter(self.instantiate(wordseq, i, pre))
-                freqs = {f: cfreqs[f] - efreqs[f] for f in cfreqs | efreqs
-                         if f in self.fdict}
+                fis, fcounts = map(list, zip(*[
+                    (self.fdict[f], cfreqs[f] - efreqs[f])
+                    for f in cfreqs | efreqs if f in self.fdict
+                ]))
 
-                for f, v in freqs.items():
-                    fi = self.fdict[f]
-                    # 累加权重加上步长乘以权重
-                    self.V[fi] += (self.k - self.R[fi]) * self.W[fi]
-                    # 更新权重
-                    self.W[fi] += v
-                    # 更新时间戳记录
-                    self.R[fi] = self.k
+                # 累加权重加上步长乘以权重
+                self.V[fis] += (self.k - self.R[fis]) * self.W[fis]
+                # 更新权重
+                self.W[fis] += fcounts
+                # 更新时间戳记录
+                self.R[fis] = self.k
                 self.k += 1
 
     def predict(self, wordseq, index, average=False):
@@ -109,13 +109,13 @@ class LinearModel(object):
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            score = sum([self.V[self.fdict[f]]
-                         for f in fvector if f in self.fdict])
+            scores = [self.V[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
         # 计算特征对应未累加权重的得分
         else:
-            score = sum([self.W[self.fdict[f]]
-                         for f in fvector if f in self.fdict])
-        return score
+            scores = [self.W[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
+        return sum(scores)
 
     def instantiate(self, wordseq, index, tag):
         word = wordseq[index]
