@@ -210,7 +210,7 @@ class liner_model(object):
 
             if self.test_data != None:
                 test_correct_num, test_num, test_precision = self.evaluate(self.test_data, averaged)
-                print('\t' + 'train准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
+                print('\t' + 'test准确率：%d / %d = %f' % (test_correct_num, test_num, test_precision))
 
             if dev_precision > (max_dev_precision):
                 max_dev_precision = dev_precision
