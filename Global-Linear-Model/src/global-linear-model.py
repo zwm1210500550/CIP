@@ -184,8 +184,9 @@ class global_liner_model(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def online_train(self, iteration=20, averaged=False, shuffle=False):
+    def online_train(self, iteration=20, averaged=False, shuffle=False, exitor=20):
         max_dev_precision = 0
+        counter = 0
         if averaged:
             print('using V to predict dev data')
         for iter in range(iteration):
@@ -227,10 +228,18 @@ class global_liner_model(object):
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
+                counter = 0
+            else:
+                counter += 1
                 # self.save('./result.txt')
 
             endtime = datetime.datetime.now()
             print("\titeration executing time is " + str((endtime - starttime)) + " s")
+
+            if train_correct_num == total_num:
+                break
+            if counter >= exitor:
+                break
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 
@@ -241,10 +250,11 @@ if __name__ == '__main__':
     averaged = config['averaged']
     iterator = config['iterator']
     shuffle = config['shuffle']
+    exitor = config['exitor']
 
     starttime = datetime.datetime.now()
     model = global_liner_model(train_data_file, dev_data_file, test_data_file)
     model.create_feature_space()
-    model.online_train(iterator, averaged, shuffle)
+    model.online_train(iterator, averaged, shuffle, exitor)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")

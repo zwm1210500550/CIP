@@ -249,6 +249,7 @@ class CRF(object):
     def SGD_train(self, iteration=20, batchsize=1, shuffle=False, regulization=False, step_opt=False, eta=0.5,
                   C=0.0001):
         max_dev_precision = 0
+        counter = 0
         if regulization:
             print('add regulization...C=%f' % (C), flush=True)
         if step_opt:
@@ -299,9 +300,14 @@ class CRF(object):
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
+                counter = 0
+            else:
+                counter += 1
 
             endtime = datetime.datetime.now()
             print("\titeration executing time is " + str((endtime - starttime)) + " s", flush=True)
+            if counter >= 10:
+                break
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 

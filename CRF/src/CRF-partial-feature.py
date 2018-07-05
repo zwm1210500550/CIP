@@ -230,21 +230,29 @@ class CRF(object):
                         if f in self.features:
                             self.g[self.features[f]][self.tag2id[cur_tag]] -= p
             else:
-                for pre_tag in self.tags:
-                    template = self.create_feature_template(sentence, i, pre_tag)
-                    score = (self.score(template))
-                    for cur_tag in self.tags:
-                        forward = forward_scores[i - 1][self.tag2id[pre_tag]]
-                        backward = backward_scores[i][self.tag2id[cur_tag]]
-                        p = np.exp(forward + score[self.tag2id[cur_tag]] + backward - log_dinominator)
-
-                        for f in template:
-                            if f in self.features:
-                                self.g[self.features[f]][self.tag2id[cur_tag]] -= p
+                features = [self.create_feature_template(sentence, i, pre_tag) for pre_tag in self.tags]
+                for j in range(len(self.tags)):
+                    score = self.score(features[j])
+                    p = np.exp(score + forward_scores[i - 1, j] + backward_scores[i] - log_dinominator)
+                    for f in features[j]:
+                        if f in self.features:
+                            self.g[self.features[f]] -= p
+                # for pre_tag in self.tags:
+                #     template = self.create_feature_template(sentence, i, pre_tag)
+                #     score = (self.score(template))
+                #     for cur_tag in self.tags:
+                #         forward = forward_scores[i - 1][self.tag2id[pre_tag]]
+                #         backward = backward_scores[i][self.tag2id[cur_tag]]
+                #         p = np.exp(forward + score[self.tag2id[cur_tag]] + backward - log_dinominator)
+                #
+                #         for f in template:
+                #             if f in self.features:
+                #                 self.g[self.features[f]][self.tag2id[cur_tag]] -= p
 
     def SGD_train(self, iteration=20, batchsize=1, shuffle=False, regulization=False, step_opt=False, eta=0.5,
                   C=0.0001):
         max_dev_precision = 0
+        counter = 0
         if regulization:
             print('add regulization...C=%f' % (C), flush=True)
         if step_opt:
@@ -254,7 +262,7 @@ class CRF(object):
             starttime = datetime.datetime.now()
             print('iterator: %d' % (iter), flush=True)
             if shuffle:
-                print('shuffle the train data...', flush=True)
+                print('\tshuffle the train data...', flush=True)
                 self.train_data.shuffle()
 
             for i in range(len(self.train_data.sentences)):
@@ -297,9 +305,14 @@ class CRF(object):
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
+                counter = 0
+            else:
+                counter += 1
 
             endtime = datetime.datetime.now()
             print("\titeration executing time is " + str((endtime - starttime)) + " s", flush=True)
+            if counter >= 10:
+                break
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 

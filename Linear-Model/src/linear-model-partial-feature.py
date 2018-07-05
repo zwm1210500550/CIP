@@ -130,12 +130,9 @@ class liner_model(object):
 
     def predict(self, sentence, position, averaged=False):
         template = self.create_feature_template(sentence, position)
-        f_id = []
-        for f in template:
-            if f in self.features.keys():
-                f_id.append(self.features[f])
+        f_id = [self.features[f] for f in template if f in self.features]
         tag_id = np.argmax([self.dot(f_id, tag, averaged) for tag in self.tag_dict])
-        return list(self.tag_dict)[tag_id]
+        return self.tag_list[tag_id]
 
     def save(self, path):
         f = open(path, 'w', encoding='utf-8')
@@ -159,18 +156,21 @@ class liner_model(object):
 
         return (correct_num, total_num, correct_num / total_num)
 
-    def online_train(self, iterator=20, averaged=False, shuffle=True):
+    def online_train(self, iterator=20, averaged=False, shuffle=True, exitor=20):
         max_dev_precision = 0.0
         max_iterator = -1
         update_time = 0
+        counter = 0
         data = self.train_data.split()
         if averaged == True:
             print('using V to predict dev data...')
         for iter in range(iterator):
             print('iterator: %d' % (iter))
+            starttime = datetime.datetime.now()
             if shuffle == True:
                 random.shuffle(data)
                 print('\tshuffle the train data...')
+
             for i in range(len(data)):
                 sentence = data[i][0]
                 j = data[i][1]
@@ -199,7 +199,7 @@ class liner_model(object):
             for i in range(len(self.v)):
                 last_w_value = self.weights[i]
                 last_update_times = self.update_times[i]  # 上一次更新所在的次数
-                if (current_update_times != last_update_times):
+                if current_update_times != last_update_times:
                     self.update_times[i] = current_update_times
                     self.v[i] += (current_update_times - last_update_times - 1) * last_w_value + self.weights[i]
 
@@ -215,7 +215,18 @@ class liner_model(object):
             if dev_precision > (max_dev_precision):
                 max_dev_precision = dev_precision
                 max_iterator = iter
+                counter = 0
+            else:
+                counter += 1
                 # self.save('./result.txt')
+            endtime = datetime.datetime.now()
+            print("\titeration executing time is " + str((endtime - starttime)) + " s")
+
+            if train_correct_num == total_num:
+                break
+
+            if counter >= exitor:
+                break
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision))
 
     def update_v(self, index, update_time, last_w_value):
@@ -232,10 +243,11 @@ if __name__ == '__main__':
     averaged = config['averaged']
     iterator = config['iterator']
     shuffle = config['shuffle']
+    exitor = config['exitor']
 
     starttime = datetime.datetime.now()
     lm = liner_model(train_data_file, dev_data_file, test_data_file)
     lm.create_feature_space()
-    lm.online_train(iterator, averaged, shuffle)
+    lm.online_train(iterator, averaged, shuffle, exitor)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")
