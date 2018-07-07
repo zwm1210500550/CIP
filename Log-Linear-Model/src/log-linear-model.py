@@ -2,6 +2,7 @@ import datetime
 import numpy as np
 import random
 from scipy.misc import logsumexp
+from collections import defaultdict
 from config import config
 
 
@@ -114,10 +115,10 @@ class loglinear_model(object):
                 for tag in tags:
                     if tag not in self.tag_list:
                         self.tag_list.append(tag)
-        self.tag_list=sorted(self.tag_list)
+        self.tag_list = sorted(self.tag_list)
         self.tag_dict = {t: i for i, t in enumerate(self.tag_list)}
         self.weights = np.zeros(len(self.features))
-        self.g = np.zeros(len(self.features))
+        self.g = defaultdict(float)
         print("the total number of features is %d" % (len(self.weights)), flush=True)
 
     def dot(self, feature):
@@ -144,10 +145,12 @@ class loglinear_model(object):
                 if predict_tag == tags[j]:
                     correct_num += 1
 
-        return (correct_num, total_num, correct_num / total_num)
+        return correct_num, total_num, correct_num / total_num
 
-    def SGD_train(self, iteration, batch_size=50, shuffle=False, regulization=False, step_opt=False, eta=0.5, C=0.0001):
+    def SGD_train(self, iteration, batch_size=50, shuffle=False, regulization=False, step_opt=False, eta=0.5, C=0.0001,
+                  exitor=10):
         b = 0
+        counter = 0
         max_dev_precision = 0
         data = self.train_data.split()
         if regulization:
@@ -167,8 +170,7 @@ class loglinear_model(object):
                 gold_tag = data[i][2]
                 gold_feature = self.create_feature_template(sentence, gold_tag, j)
                 for f in gold_feature:
-                    if f in self.features:
-                        self.g[self.features[f]] += 1
+                    self.g[self.features[f]] += 1
 
                 feature_list = [self.create_feature_template(sentence, tag, j) for tag in self.tag_list]
                 scores = [self.dot(template) for template in feature_list]
@@ -182,25 +184,29 @@ class loglinear_model(object):
 
                 if b == batch_size:
                     if step_opt:
-                        self.weights += eta * self.g
+                        for id, value in self.g.items():
+                            self.weights[id] += eta * value
                     else:
-                        self.weights += self.g
+                        for id, value in self.g.items():
+                            self.weights[id] += value
                     if regulization:
                         self.weights -= C * eta * self.weights
                     b = 0
                     eta = max(eta * 0.999, 0.00001)
-                    self.g = np.zeros(len(self.features))
+                    self.g = defaultdict(float)
 
             if b > 0:
                 if step_opt:
-                    self.weights += eta * self.g
+                    for id, value in self.g.items():
+                        self.weights[id] += eta * value
                 else:
-                    self.weights += self.g
+                    for id, value in self.g.items():
+                        self.weights[id] += value
                 if regulization:
                     self.weights -= C * eta * self.weights
                 b = 0
                 eta = max(eta * 0.999, 0.00001)
-                self.g = np.zeros(len(self.features))
+                self.g = defaultdict(float)
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
@@ -212,8 +218,12 @@ class loglinear_model(object):
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
+            else:
+                counter += 1
             endtime = datetime.datetime.now()
             print("\titeration executing time is " + str((endtime - starttime).seconds) + " s", flush=True)
+            if counter >= exitor:
+                break
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
 
@@ -228,6 +238,7 @@ if __name__ == '__main__':
     step_opt = config['step_opt']
     C = config['C']
     eta = config['eta']
+    exitor = config['exitor']
 
     starttime = datetime.datetime.now()
     lm = loglinear_model(train_data_file, dev_data_file, test_data_file)
