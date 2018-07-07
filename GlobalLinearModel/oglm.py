@@ -3,6 +3,7 @@
 import pickle
 import random
 import time
+from collections import Counter
 
 import numpy as np
 
@@ -94,11 +95,12 @@ class GlobalLinearModel(object):
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
                 ti, pi = self.tdict[tag], self.tdict[pre]
 
-                cfv = self.instantiate(wordseq, i, prev_tag)
+                cfreqs = Counter(self.instantiate(wordseq, i, prev_tag))
                 # 统计正确词性不同权重出现的次数
-                cfis, cfcounts = np.unique([self.fdict[f] for f in cfv
-                                            if f in self.fdict],
-                                           return_counts=True)
+                cfis, cfcounts = map(list, zip(*[
+                    (self.fdict[f], cfreqs[f])
+                    for f in cfreqs if f in self.fdict
+                ]))
                 prev_w, prev_r = self.W[cfis, ti], self.R[cfis, ti]
                 # 累加权重加上步长乘以权重
                 self.V[cfis, ti] += (self.k - prev_r) * prev_w
@@ -107,11 +109,12 @@ class GlobalLinearModel(object):
                 # 更新时间戳记录
                 self.R[cfis, ti] = self.k
 
-                efv = self.instantiate(wordseq, i, prev_pre)
+                efreqs = Counter(self.instantiate(wordseq, i, prev_pre))
                 # 统计预测词性不同权重出现的次数
-                efis, efcounts = np.unique([self.fdict[f] for f in efv
-                                            if f in self.fdict],
-                                           return_counts=True)
+                efis, efcounts = map(list, zip(*[
+                    (self.fdict[f], efreqs[f])
+                    for f in efreqs if f in self.fdict
+                ]))
                 prev_w, prev_r = self.W[efis, pi], self.R[efis, pi]
                 # 累加权重加上步长乘以权重
                 self.V[efis, pi] += (self.k - prev_r) * prev_w
@@ -134,33 +137,30 @@ class GlobalLinearModel(object):
         for i in range(1, T):
             fvs = [self.instantiate(wordseq, i, prev_tag)
                    for prev_tag in self.tags]
-            scores = np.array([delta[i - 1, j] + self.score(fv, average)
-                               for j, fv in enumerate(fvs)])
-            paths[i] = np.argmax(scores, axis=0)
-            delta[i] = scores[paths[i], np.arange(self.n)]
+            scores = np.column_stack([
+                self.score(fv, average) for fv in fvs
+            ]) + delta[i - 1]
+            paths[i] = np.argmax(scores, axis=1)
+            delta[i] = scores[np.arange(self.n), paths[i]]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
-        for i in range(T - 1, 0, -1):
+        for i in reversed(range(1, T)):
             prev = paths[i, prev]
             predict.append(prev)
         return [self.tags[i] for i in reversed(predict)]
 
     def score(self, fvector, average=False):
-        # 计算特征对应累加权重的得分
-        if average:
-            scores = np.array([self.V[self.fdict[f]]
-                               for f in fvector if f in self.fdict])
-        # 计算特征对应未累加权重的得分
-        else:
-            scores = np.array([self.W[self.fdict[f]]
-                               for f in fvector if f in self.fdict])
+        # 获取特征索引
+        fis = [self.fdict[f] for f in fvector if f in self.fdict]
+        # 计算特征对应权重得分
+        scores = self.V[fis] if average else self.W[fis]
         return np.sum(scores, axis=0)
 
     def instantiate(self, wordseq, index, prev_tag):
         word = wordseq[index]
-        prev_word = wordseq[index - 1] if index > 0 else "^^"
-        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
+        prev_word = wordseq[index - 1] if index > 0 else '^^'
+        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else '$$'
         prev_char = prev_word[-1]
         next_char = next_word[0]
         first_char = word[0]

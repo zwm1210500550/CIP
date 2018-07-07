@@ -90,9 +90,10 @@ class LogLinearModel(object):
         gradients = defaultdict(float)
 
         for wordseq, i, tag in batch:
-            for f in self.instantiate(wordseq, i, tag):
-                if f in self.fdict:
-                    gradients[self.fdict[f]] += 1
+            fv = self.instantiate(wordseq, i, tag)
+            fis = [self.fdict[f] for f in fv if f in self.fdict]
+            for fi in fis:
+                gradients[fi] += 1
 
             # 获取每个词性对应的所有特征
             fvs = [self.instantiate(wordseq, i, tag) for tag in self.tags]
@@ -100,9 +101,9 @@ class LogLinearModel(object):
             probs = np.exp(scores - logsumexp(scores))
 
             for fv, p in zip(fvs, probs):
-                for f in fv:
-                    if f in self.fdict:
-                        gradients[self.fdict[f]] -= p
+                fis = [self.fdict[f] for f in fv if f in self.fdict]
+                for fi in fis:
+                    gradients[fi] -= p
 
         if c != 0:
             self.W *= (1 - eta * c)
@@ -116,14 +117,14 @@ class LogLinearModel(object):
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector):
-        score = sum([self.W[self.fdict[f]]
-                     for f in fvector if f in self.fdict])
-        return score
+        scores = [self.W[self.fdict[f]]
+                  for f in fvector if f in self.fdict]
+        return sum(scores)
 
     def instantiate(self, wordseq, index, tag):
         word = wordseq[index]
-        prev_word = wordseq[index - 1] if index > 0 else "^^"
-        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
+        prev_word = wordseq[index - 1] if index > 0 else '^^'
+        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else '$$'
         prev_char = prev_word[-1]
         next_char = next_word[0]
         first_char = word[0]

@@ -95,14 +95,13 @@ class LogLinearModel(object):
             ti = self.tdict[tag]
 
             fv = self.instantiate(wordseq, i)
+            fis = [self.fdict[f] for f in fv if f in self.fdict]
             scores = self.score(fv)
             probs = np.exp(scores - logsumexp(scores))
 
-            for f in fv:
-                if f in self.fdict:
-                    fi = self.fdict[f]
-                    gradients[fi, ti] += 1
-                    gradients[fi] -= probs
+            for fi in fis:
+                gradients[fi, ti] += 1
+                gradients[fi] -= probs
 
         if c != 0:
             self.W *= (1 - eta * c)
@@ -121,8 +120,8 @@ class LogLinearModel(object):
 
     def instantiate(self, wordseq, index):
         word = wordseq[index]
-        prev_word = wordseq[index - 1] if index > 0 else "^^"
-        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
+        prev_word = wordseq[index - 1] if index > 0 else '^^'
+        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else '$$'
         prev_char = prev_word[-1]
         next_char = next_word[0]
         first_char = word[0]

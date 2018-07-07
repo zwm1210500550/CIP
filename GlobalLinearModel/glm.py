@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pickle
-import sys
+import random
 import time
 from collections import Counter
 
@@ -93,17 +93,17 @@ class GlobalLinearModel(object):
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
                 cfreqs = Counter(self.instantiate(wordseq, i, prev_tag, tag))
                 efreqs = Counter(self.instantiate(wordseq, i, prev_pre, pre))
-                freqs = {f: cfreqs[f] - efreqs[f] for f in cfreqs | efreqs
-                         if f in self.fdict}
+                fis, fcounts = map(list, zip(*[
+                    (self.fdict[f], cfreqs[f] - efreqs[f])
+                    for f in cfreqs | efreqs if f in self.fdict
+                ]))
 
-                for f, v in freqs.items():
-                    fi = self.fdict[f]
-                    # 累加权重加上步长乘以权重
-                    self.V[fi] += (self.k - self.R[fi]) * self.W[fi]
-                    # 更新权重
-                    self.W[fi] += v
-                    # 更新时间戳记录
-                    self.R[fi] = self.k
+                # 累加权重加上步长乘以权重
+                self.V[fis] += (self.k - self.R[fis]) * self.W[fis]
+                # 更新权重
+                self.W[fis] += fcounts
+                # 更新时间戳记录
+                self.R[fis] = self.k
                 prev_tag, prev_pre = tag, pre
             self.k += 1
 
@@ -117,16 +117,17 @@ class GlobalLinearModel(object):
         delta[0] = [self.score(fv, average) for fv in fvs]
 
         for i in range(1, T):
-            for j, tag in enumerate(self.tags):
-                fvs = [self.instantiate(wordseq, i, prev_tag, tag)
-                       for prev_tag in self.tags]
-                scores = [self.score(fv, average) for fv in fvs] + delta[i - 1]
-                paths[i, j] = np.argmax(scores)
-                delta[i, j] = scores[paths[i, j]]
+            scores = [
+                [self.score(self.instantiate(wordseq, i, prev_tag, tag),
+                            average) for prev_tag in self.tags]
+                for tag in self.tags
+            ] + delta[i - 1]
+            paths[i] = np.argmax(scores, axis=1)
+            delta[i] = scores[np.arange(self.n), paths[i]]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
-        for i in range(T - 1, 0, -1):
+        for i in reversed(range(1, T)):
             prev = paths[i, prev]
             predict.append(prev)
         return [self.tags[i] for i in reversed(predict)]
@@ -134,18 +135,18 @@ class GlobalLinearModel(object):
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            score = sum([self.V[self.fdict[f]]
-                         for f in fvector if f in self.fdict])
+            scores = [self.V[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
         # 计算特征对应未累加权重的得分
         else:
-            score = sum([self.W[self.fdict[f]]
-                         for f in fvector if f in self.fdict])
-        return score
+            scores = [self.W[self.fdict[f]]
+                      for f in fvector if f in self.fdict]
+        return sum(scores)
 
     def instantiate(self, wordseq, index, prev_tag, tag):
         word = wordseq[index]
-        prev_word = wordseq[index - 1] if index > 0 else "^^"
-        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
+        prev_word = wordseq[index - 1] if index > 0 else '^^'
+        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else '$$'
         prev_char = prev_word[-1]
         next_char = next_word[0]
         first_char = word[0]
