@@ -218,6 +218,7 @@ class loglinear_model(object):
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
+                counter = 0
             else:
                 counter += 1
             endtime = datetime.datetime.now()
@@ -243,6 +244,6 @@ if __name__ == '__main__':
     starttime = datetime.datetime.now()
     lm = loglinear_model(train_data_file, dev_data_file, test_data_file)
     lm.create_feature_space()
-    lm.SGD_train(iterator, batchsize, shuffle, regulization, step_opt, eta, C)
+    lm.SGD_train(iterator, batchsize, shuffle, regulization, step_opt, eta, C, exitor)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")

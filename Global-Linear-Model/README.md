@@ -11,10 +11,12 @@
     dev.conll: 开发集
     test.conll: 测试集
 ./result:
-    origin_W.txt: 初始版本，小数据测试，使用W作为权重的评价结果
-    origin_V.txt: 初始版本，小数据测试，使用V作为权重的评价结果
-    partial_feature_W: 使用部分特征优化后，小数据测试，使用W作为权重的结果
-    partial_feature_V: 使用部分特征优化后，小数据测试，使用V作为权重的结果
+    origin.txt: 初始版本，小数据测试，使用W作为权重的评价结果
+    origin-averaged.txt: 初始版本，小数据测试，使用V作为权重的评价结果
+    partial.txt: 使用部分特征优化后，小数据测试，使用W作为权重的结果
+    partial-averaged.txt: 使用部分特征优化后，小数据测试，使用V作为权重的结果
+    bigdata-partial.txt: 使用部分特征优化后，大数据测试，使用W作为权重的结果
+    bigdata-partial-averaged.txt: 使用部分特征优化后，大数据测试，使用V作为权重的结果
 ./src:
     global-linear-model.py: 初始版本的代码
     global-linear-model-partial-feature.py: 优化后的代码,速度还是过慢
@@ -41,13 +43,14 @@ config = {
     'test_data_file': './data/dev.conll',      #测试集文件,大数据改为'./big-data/test.conll'
     'averaged': False,                         #是否使用averaged percetron
     'iterator': 20,                            #最大迭代次数
+    'exitor':10,                               #连续多少次迭代没有提升就退出
     'shuffle': False                           #每次迭代是否打乱数据
 }
 ```
 
 ```bash
 $ cd ./Global-Linear-Model
-$ python src/global-linear-model.py                    #修改config.py文件中的参数
+$ python src/global-linear-model.py                       #修改config.py文件中的参数
 $ python src/global-linear-model-partial-feature-2D.py    #修改config.py文件中的参数
 ```
 
@@ -59,15 +62,14 @@ $ python src/global-linear-model-partial-feature-2D.py    #修改config.py文件
 
 开发集：data/dev.conll
 
-| 文件         | global-linear-model.py | global-linear-model.py | Global-linear-model-partial-feature-2D.py | Global-linear-model-partial-feature-2D.py |
-| :----------- | ------------ | ------------ | --------------- | --------------- |
-| 特征权重     | W            | V            | W               | V               |
-| 是否打乱数据 | 否 | 否 | 否 | 否 |
-| 执行时间     | 13,519s | 13,698s | 1,219s | 1,221ss |
-| 训练集准确率 | 99.95% | 99.47% | 99.91% | 99.70% |
-| 开发集准确率 | 86.65% | 87.48% | 87.32% | 88.07% |
-| 迭代次数     | 17 | 14 | 15 | 17 |
-| 最大迭代次数 | 20           | 20           | 20 | 20 |
+| partial feature | averaged percetron | 打乱数据 | 迭代次数 | dev准确率 | 时间/迭代 |
+| :-------------: | :----------------: | :------: | :------: | :-------: | :-------: |
+|        ×        |         ×          |    √     |  21/26   |  86.48%   |   11min   |
+|        ×        |         √          |    √     |  22/22   |  87.68%   |   11min   |
+|        √        |         ×          |    √     |  14/18   |  87.59%   |    44s    |
+|        √        |         √          |    √     |  22/22   |  88.27%   |    45s    |
+
+
 
 注：用numpy二维矩阵整体操作可以大大加快viterbi的速度。
 
@@ -79,14 +81,10 @@ $ python src/global-linear-model-partial-feature-2D.py    #修改config.py文件
 
 测试集：big-data/test.conll
 
-| 文件         | global-linear-model.py | global-linear-model.py | Global-linear-model-partial-feature-2D.py | Global-linear-model-partial-feature-2D.py |
-| :----------- | ---------------------- | ---------------------- | ----------------------------------------- | ----------------------------------------- |
-| 特征权重     | W                      | V                      | W                                         | V                                         |
-| 是否打乱数据 | 否                     | 否                     | 否                                        | 否                                        |
-| 执行时间     |                        |                        |                                           |                                           |
-| 训练集准确率 |                        |                        |                                           |                                           |
-| 开发集准确率 |                        |                        |                                           |                                           |
-| 测试集准确率 |                        |                        |                                           |                                           |
-| 迭代次数     |                        |                        |                                           |                                           |
-| 最大迭代次数 | 20                     | 20                     | 20                                        | 20                                        |
+| partial feature | averaged percetron | 打乱数据 | 迭代次数 | dev准确率 | test准确率 | 时间/迭代 |
+| :-------------: | :----------------: | :------: | :------: | :-------: | ---------- | :-------: |
+|        ×        |         ×          |    √     |          |           |            |           |
+|        ×        |         √          |    √     |          |           |            |           |
+|        √        |         ×          |    √     |  23/33   |  93.68%   | 93.41%     |   18min   |
+|        √        |         √          |    √     |   7/17   |  94.31%   | 94.09%     |   18min   |
 

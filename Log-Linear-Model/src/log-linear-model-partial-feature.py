@@ -215,6 +215,7 @@ class loglinear_model(object):
             if dev_precision > max_dev_precision:
                 max_dev_precision = dev_precision
                 max_iterator = iter
+                counter = 0
             else:
                 counter += 1
             endtime = datetime.datetime.now()

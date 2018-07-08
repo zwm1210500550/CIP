@@ -14,7 +14,7 @@ class dataset(object):
         tag = []
         word_num = 0
         f = open(filename, encoding='utf-8')
-        while (True):
+        while True:
             line = f.readline()
             if not line:
                 break
@@ -131,7 +131,7 @@ class liner_model(object):
     def predict(self, sentence, position, averaged=False):
         template = self.create_feature_template(sentence, position)
         f_id = [self.features[f] for f in template if f in self.features]
-        tag_id = np.argmax([self.dot(f_id, tag, averaged) for tag in self.tag_dict])
+        tag_id = np.argmax([self.dot(f_id, tag, averaged) for tag in self.tag_list])
         return self.tag_list[tag_id]
 
     def save(self, path):
@@ -154,7 +154,7 @@ class liner_model(object):
                 if predict_tag == tags[j]:
                     correct_num += 1
 
-        return (correct_num, total_num, correct_num / total_num)
+        return correct_num, total_num, correct_num / total_num
 
     def online_train(self, iterator=20, averaged=False, shuffle=True, exitor=20):
         max_dev_precision = 0.0

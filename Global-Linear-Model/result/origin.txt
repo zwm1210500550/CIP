@@ -1,87 +1,136 @@
 nohup: ignoring input
 ./data/train.conll:共803个句子,共20454个词。
 ./data/dev.conll:共1910个句子,共50319个词。
-./data/dev.conll:共1910个句子,共50319个词。
 the total number of features is 81541
 iterator: 0
-	train准确率：18323 / 20454 = 0.895815
-	dev准确率：39373 / 50319 = 0.782468
-	iteration executing time is 0:11:14.864302 s
+shuffle the train data...
+	train准确率：18857 / 20454 = 0.921922
+	dev准确率：41118 / 50319 = 0.817147
+	iteration executing time is 0:11:11.374321 s
 iterator: 1
-	train准确率：19336 / 20454 = 0.945341
-	dev准确率：42021 / 50319 = 0.835092
-	iteration executing time is 0:11:15.173908 s
+shuffle the train data...
+	train准确率：19480 / 20454 = 0.952381
+	dev准确率：41836 / 50319 = 0.831416
+	iteration executing time is 0:11:24.125106 s
 iterator: 2
-	train准确率：19747 / 20454 = 0.965435
-	dev准确率：42481 / 50319 = 0.844234
-	iteration executing time is 0:11:16.913750 s
+shuffle the train data...
+	train准确率：19927 / 20454 = 0.974235
+	dev准确率：42458 / 50319 = 0.843777
+	iteration executing time is 0:11:03.344733 s
 iterator: 3
-	train准确率：19957 / 20454 = 0.975702
-	dev准确率：42898 / 50319 = 0.852521
-	iteration executing time is 0:11:17.193775 s
+shuffle the train data...
+	train准确率：20005 / 20454 = 0.978048
+	dev准确率：42777 / 50319 = 0.850116
+	iteration executing time is 0:11:05.977330 s
 iterator: 4
-	train准确率：20123 / 20454 = 0.983817
-	dev准确率：43052 / 50319 = 0.855581
-	iteration executing time is 0:11:14.964527 s
+shuffle the train data...
+	train准确率：20195 / 20454 = 0.987337
+	dev准确率：43182 / 50319 = 0.858165
+	iteration executing time is 0:11:06.743219 s
 iterator: 5
-	train准确率：20194 / 20454 = 0.987289
-	dev准确率：43253 / 50319 = 0.859576
-	iteration executing time is 0:11:16.923270 s
+shuffle the train data...
+	train准确率：19920 / 20454 = 0.973893
+	dev准确率：42537 / 50319 = 0.845347
+	iteration executing time is 0:11:05.224079 s
 iterator: 6
-	train准确率：20248 / 20454 = 0.989929
-	dev准确率：43310 / 50319 = 0.860709
-	iteration executing time is 0:11:14.547931 s
-iterator: 7
-	train准确率：20051 / 20454 = 0.980297
-	dev准确率：42708 / 50319 = 0.848745
-	iteration executing time is 0:11:15.740300 s
-iterator: 8
-	train准确率：20294 / 20454 = 0.992178
-	dev准确率：43204 / 50319 = 0.858602
-	iteration executing time is 0:11:14.696275 s
-iterator: 9
+shuffle the train data...
 	train准确率：20314 / 20454 = 0.993155
-	dev准确率：43321 / 50319 = 0.860927
-	iteration executing time is 0:11:15.488803 s
+	dev准确率：43288 / 50319 = 0.860271
+	iteration executing time is 0:11:04.074547 s
+iterator: 7
+shuffle the train data...
+	train准确率：20307 / 20454 = 0.992813
+	dev准确率：43189 / 50319 = 0.858304
+	iteration executing time is 0:11:06.069628 s
+iterator: 8
+shuffle the train data...
+	train准确率：20394 / 20454 = 0.997067
+	dev准确率：43402 / 50319 = 0.862537
+	iteration executing time is 0:11:07.834590 s
+iterator: 9
+shuffle the train data...
+	train准确率：20349 / 20454 = 0.994867
+	dev准确率：43200 / 50319 = 0.858523
+	iteration executing time is 0:11:06.845591 s
 iterator: 10
-	train准确率：20328 / 20454 = 0.993840
-	dev准确率：43235 / 50319 = 0.859218
-	iteration executing time is 0:11:15.286088 s
+shuffle the train data...
+	train准确率：20350 / 20454 = 0.994915
+	dev准确率：43126 / 50319 = 0.857052
+	iteration executing time is 0:11:06.986803 s
 iterator: 11
-	train准确率：20298 / 20454 = 0.992373
-	dev准确率：43198 / 50319 = 0.858483
-	iteration executing time is 0:11:16.934692 s
+shuffle the train data...
+	train准确率：20408 / 20454 = 0.997751
+	dev准确率：43119 / 50319 = 0.856913
+	iteration executing time is 0:11:07.861407 s
 iterator: 12
-	train准确率：20390 / 20454 = 0.996871
-	dev准确率：43521 / 50319 = 0.864902
-	iteration executing time is 0:11:17.290338 s
+shuffle the train data...
+	train准确率：20414 / 20454 = 0.998044
+	dev准确率：43309 / 50319 = 0.860689
+	iteration executing time is 0:11:13.739040 s
 iterator: 13
-	train准确率：20419 / 20454 = 0.998289
-	dev准确率：43461 / 50319 = 0.863710
-	iteration executing time is 0:11:14.735110 s
+shuffle the train data...
+	train准确率：20439 / 20454 = 0.999267
+	dev准确率：43207 / 50319 = 0.858662
+	iteration executing time is 0:11:09.037351 s
 iterator: 14
-	train准确率：20416 / 20454 = 0.998142
-	dev准确率：43273 / 50319 = 0.859973
-	iteration executing time is 0:11:17.282267 s
+shuffle the train data...
+	train准确率：20436 / 20454 = 0.999120
+	dev准确率：43497 / 50319 = 0.864425
+	iteration executing time is 0:11:06.828576 s
 iterator: 15
-	train准确率：20430 / 20454 = 0.998827
-	dev准确率：43361 / 50319 = 0.861722
-	iteration executing time is 0:11:19.138617 s
+shuffle the train data...
+	train准确率：20447 / 20454 = 0.999658
+	dev准确率：43455 / 50319 = 0.863590
+	iteration executing time is 0:11:07.998757 s
 iterator: 16
-	train准确率：20444 / 20454 = 0.999511
-	dev准确率：43603 / 50319 = 0.866532
-	iteration executing time is 0:11:16.855875 s
+shuffle the train data...
+	train准确率：20448 / 20454 = 0.999707
+	dev准确率：43416 / 50319 = 0.862815
+	iteration executing time is 0:11:09.241482 s
 iterator: 17
-	train准确率：20451 / 20454 = 0.999853
-	dev准确率：43502 / 50319 = 0.864524
-	iteration executing time is 0:11:14.398788 s
+shuffle the train data...
+	train准确率：20439 / 20454 = 0.999267
+	dev准确率：43360 / 50319 = 0.861702
+	iteration executing time is 0:11:08.005305 s
 iterator: 18
-	train准确率：20453 / 20454 = 0.999951
-	dev准确率：43541 / 50319 = 0.865299
-	iteration executing time is 0:11:17.152726 s
-iterator: 19
+shuffle the train data...
 	train准确率：20441 / 20454 = 0.999364
-	dev准确率：43443 / 50319 = 0.863352
-	iteration executing time is 0:11:13.433645 s
-iterator = 16 , max_dev_precision = 0.866532
-executing time is 13519 s
+	dev准确率：43288 / 50319 = 0.860271
+	iteration executing time is 0:11:07.019168 s
+iterator: 19
+shuffle the train data...
+	train准确率：20439 / 20454 = 0.999267
+	dev准确率：43415 / 50319 = 0.862795
+	iteration executing time is 0:11:11.488765 s
+iterator: 20
+shuffle the train data...
+	train准确率：20450 / 20454 = 0.999804
+	dev准确率：43515 / 50319 = 0.864783
+	iteration executing time is 0:11:09.294863 s
+iterator: 21
+shuffle the train data...
+	train准确率：20442 / 20454 = 0.999413
+	dev准确率：43387 / 50319 = 0.862239
+	iteration executing time is 0:11:10.996521 s
+iterator: 22
+shuffle the train data...
+	train准确率：20445 / 20454 = 0.999560
+	dev准确率：43459 / 50319 = 0.863670
+	iteration executing time is 0:11:09.505678 s
+iterator: 23
+shuffle the train data...
+	train准确率：20448 / 20454 = 0.999707
+	dev准确率：43515 / 50319 = 0.864783
+	iteration executing time is 0:11:08.400501 s
+iterator: 24
+shuffle the train data...
+	train准确率：20453 / 20454 = 0.999951
+	dev准确率：43456 / 50319 = 0.863610
+	iteration executing time is 0:11:33.665230 s
+iterator: 25
+shuffle the train data...
+	train准确率：20454 / 20454 = 1.000000
+	dev准确率：43475 / 50319 = 0.863988
+	iteration executing time is 0:11:46.901273 s
+iterator = 20 , max_dev_precision = 0.864783
+executing time is 17449 s
