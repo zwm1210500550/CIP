@@ -176,29 +176,27 @@ class loglinear_model(object):
                     self.g[(self.features[f], self.tag_dict[gold_tag])] += 1
 
                 if b == batch_size:
+                    if regulization:
+                        self.weights -= eta * C * self.weights
                     if step_opt:
                         for id, value in self.g.items():
                             self.weights[id] += eta * value
                     else:
                         for id, value in self.g.items():
                             self.weights[id] += value
-
-                    if regulization:
-                        self.weights -= eta * C * self.weights
                     b = 0
                     eta = max(eta * 0.999, 0.00001)
                     self.g = defaultdict(float)
 
             if b > 0:
+                if regulization:
+                    self.weights -= eta * C * self.weights
                 if step_opt:
                     for id, value in self.g.items():
                         self.weights[id] += eta * value
                 else:
                     for id, value in self.g.items():
                         self.weights[id] += value
-
-                if regulization:
-                    self.weights -= eta * C * self.weights
                 b = 0
                 eta = max(eta * 0.999, 0.00001)
                 self.g = defaultdict(float)
