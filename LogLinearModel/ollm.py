@@ -52,9 +52,12 @@ class LogLinearModel(object):
     def SGD(self, train, dev, file,
             epochs, batch_size, c, eta, decay, interval,
             anneal, regularize, shuffle):
+        # 记录参数更新次数
+        count = 0
+        # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
         training_data = [(wordseq, i, tag)
-                         for wordseq, tagseq in train
+                         for wordseq, tagseq in train[:1000]
                          for i, tag in enumerate(tagseq)]
         # 迭代指定次数训练模型
         for epoch in range(epochs):
@@ -65,14 +68,18 @@ class LogLinearModel(object):
             # 设置L2正则化系数
             if not regularize:
                 c = 0
-            # 设置学习速率衰减
-            eta = 1 / (1 + decay * epoch) * eta if anneal else 1
             # 按照指定大小对数据分割批次
             batches = [training_data[i:i + batch_size]
                        for i in range(0, len(training_data), batch_size)]
+            length = len(batches)
             # 根据批次数据更新权重
             for batch in batches:
-                self.update(batch, c, eta)
+                if not anneal:
+                    self.update(batch, c)
+                # 设置学习速率的指数衰减
+                else:
+                    self.update(batch, c, eta * decay ** (count / length))
+                count += 1
 
             print("Epoch %d / %d: " % (epoch, epochs))
             print("\ttrain: %d / %d = %4f" % self.evaluate(train))
@@ -88,7 +95,7 @@ class LogLinearModel(object):
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
 
-    def update(self, batch, c, eta):
+    def update(self, batch, c, eta=1):
         gradients = defaultdict(float)
 
         for wordseq, i, tag in batch:
@@ -114,8 +121,8 @@ class LogLinearModel(object):
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector):
-        scores = np.array([self.W[self.fdict[f]]
-                           for f in fvector if f in self.fdict])
+        scores = [self.W[self.fdict[f]]
+                  for f in fvector if f in self.fdict]
         return np.sum(scores, axis=0)
 
     def instantiate(self, wordseq, index):

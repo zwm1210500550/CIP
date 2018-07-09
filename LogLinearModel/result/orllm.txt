@@ -1,0 +1,133 @@
+nohup: 忽略输入
+Creating Log Linear Model with 31 tags
+Using 803 sentences to create the feature space
+The size of the feature space is 67359
+Using SGD algorithm to train the model
+Epoch 0 / 100:
+	train: 19327 / 20454 = 0.944901
+	dev: 42456 / 50319 = 0.843737
+	5.569823s elapsed
+Epoch 1 / 100:
+	train: 19906 / 20454 = 0.973208
+	dev: 42933 / 50319 = 0.853216
+	6.723053s elapsed
+Epoch 2 / 100:
+	train: 20135 / 20454 = 0.984404
+	dev: 43139 / 50319 = 0.857310
+	6.472469s elapsed
+Epoch 3 / 100:
+	train: 20267 / 20454 = 0.990858
+	dev: 43309 / 50319 = 0.860689
+	6.031042s elapsed
+Epoch 4 / 100:
+	train: 20353 / 20454 = 0.995062
+	dev: 43542 / 50319 = 0.865319
+	7.264488s elapsed
+Epoch 5 / 100:
+	train: 20412 / 20454 = 0.997947
+	dev: 43655 / 50319 = 0.867565
+	6.200564s elapsed
+Epoch 6 / 100:
+	train: 20419 / 20454 = 0.998289
+	dev: 43688 / 50319 = 0.868221
+	5.043425s elapsed
+Epoch 7 / 100:
+	train: 20442 / 20454 = 0.999413
+	dev: 43802 / 50319 = 0.870486
+	6.345158s elapsed
+Epoch 8 / 100:
+	train: 20449 / 20454 = 0.999756
+	dev: 43837 / 50319 = 0.871182
+	5.058726s elapsed
+Epoch 9 / 100:
+	train: 20453 / 20454 = 0.999951
+	dev: 43872 / 50319 = 0.871877
+	6.180412s elapsed
+Epoch 10 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43901 / 50319 = 0.872454
+	6.177614s elapsed
+Epoch 11 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43928 / 50319 = 0.872990
+	6.638689s elapsed
+Epoch 12 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43922 / 50319 = 0.872871
+	6.294289s elapsed
+Epoch 13 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43936 / 50319 = 0.873149
+	4.979810s elapsed
+Epoch 14 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43942 / 50319 = 0.873269
+	5.519578s elapsed
+Epoch 15 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43944 / 50319 = 0.873308
+	4.909148s elapsed
+Epoch 16 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43958 / 50319 = 0.873587
+	5.416395s elapsed
+Epoch 17 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43969 / 50319 = 0.873805
+	5.860470s elapsed
+Epoch 18 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43975 / 50319 = 0.873924
+	5.264350s elapsed
+Epoch 19 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43976 / 50319 = 0.873944
+	5.823494s elapsed
+Epoch 20 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43981 / 50319 = 0.874044
+	5.025073s elapsed
+Epoch 21 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43986 / 50319 = 0.874143
+	4.972242s elapsed
+Epoch 22 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43982 / 50319 = 0.874063
+	7.344477s elapsed
+Epoch 23 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43976 / 50319 = 0.873944
+	5.007213s elapsed
+Epoch 24 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43974 / 50319 = 0.873904
+	5.672952s elapsed
+Epoch 25 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43977 / 50319 = 0.873964
+	5.034079s elapsed
+Epoch 26 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43977 / 50319 = 0.873964
+	5.172207s elapsed
+Epoch 27 / 100:
+	train: 20454 / 20454 = 1.000000
+	dev: 43979 / 50319 = 0.874004
+	7.075943s elapsed
+max precision of dev is 0.874143 at epoch 21
+165.183959s elapsed
+
+nohup: 忽略输入
+Creating Log Linear Model with 35 tags
+Using 46572 sentences to create the feature space
+The size of the feature space is 1400192
+Using SGD algorithm to train the model
+Epoch 0 / 100: 
+	train: 932990 / 1057943 = 0.881891
+	dev: 51604 / 59955 = 0.860712
+	1256.758354s elapsed
+Epoch 1 / 100: 
+	train: 934447 / 1057943 = 0.883268
+	dev: 51504 / 59955 = 0.859044
+	1237.659502s elapsed

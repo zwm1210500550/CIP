@@ -1,0 +1,100 @@
+nohup: 忽略输入
+Creating Log Linear Model with 31 tags
+Using 803 sentences to create the feature space
+The size of the feature space is 81113
+Using SGD algorithm to train the model
+Epoch 0 / 100: 
+	train: 19522 / 20454 = 0.954434
+	dev: 42705 / 50319 = 0.848685
+	26.032107s elapsed
+Epoch 1 / 100: 
+	train: 19984 / 20454 = 0.977022
+	dev: 43178 / 50319 = 0.858085
+	25.888485s elapsed
+Epoch 2 / 100: 
+	train: 20296 / 20454 = 0.992275
+	dev: 43718 / 50319 = 0.868817
+	26.145885s elapsed
+Epoch 3 / 100: 
+	train: 20388 / 20454 = 0.996773
+	dev: 43807 / 50319 = 0.870586
+	25.719341s elapsed
+Epoch 4 / 100: 
+	train: 20341 / 20454 = 0.994475
+	dev: 43684 / 50319 = 0.868141
+	25.950458s elapsed
+Epoch 5 / 100: 
+	train: 20429 / 20454 = 0.998778
+	dev: 43822 / 50319 = 0.870884
+	25.934015s elapsed
+Epoch 6 / 100: 
+	train: 20448 / 20454 = 0.999707
+	dev: 43878 / 50319 = 0.871997
+	26.136673s elapsed
+Epoch 7 / 100: 
+	train: 20451 / 20454 = 0.999853
+	dev: 43935 / 50319 = 0.873129
+	26.084126s elapsed
+Epoch 8 / 100: 
+	train: 20451 / 20454 = 0.999853
+	dev: 43924 / 50319 = 0.872911
+	26.375028s elapsed
+Epoch 9 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43940 / 50319 = 0.873229
+	25.970251s elapsed
+Epoch 10 / 100: 
+	train: 20452 / 20454 = 0.999902
+	dev: 43953 / 50319 = 0.873487
+	25.328705s elapsed
+Epoch 11 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43982 / 50319 = 0.874063
+	25.621500s elapsed
+Epoch 12 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43942 / 50319 = 0.873269
+	25.744268s elapsed
+Epoch 13 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43976 / 50319 = 0.873944
+	25.720554s elapsed
+Epoch 14 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43960 / 50319 = 0.873626
+	26.225990s elapsed
+Epoch 15 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43974 / 50319 = 0.873904
+	26.107674s elapsed
+Epoch 16 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43991 / 50319 = 0.874242
+	26.089627s elapsed
+Epoch 17 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43984 / 50319 = 0.874103
+	25.748743s elapsed
+Epoch 18 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43975 / 50319 = 0.873924
+	25.701020s elapsed
+Epoch 19 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43980 / 50319 = 0.874024
+	25.732998s elapsed
+Epoch 20 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43987 / 50319 = 0.874163
+	25.691298s elapsed
+Epoch 21 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43990 / 50319 = 0.874222
+	26.155941s elapsed
+Epoch 22 / 100: 
+	train: 20454 / 20454 = 1.000000
+	dev: 43986 / 50319 = 0.874143
+	26.352668s elapsed
+max precision of dev is 0.874242 at epoch 16
+597.562641s elapsed
+
