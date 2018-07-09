@@ -152,11 +152,17 @@ class loglinear_model(object):
         b = 0
         counter = 0
         max_dev_precision = 0
+        global_step = 1
+        decay_steps = 100000
+        decay_rate = 0.96
+        learn_rate = eta
+
         data = self.train_data.split()
+        print('eta=%f' % (eta))
         if regulization:
-            print('add regulization...C=%f' % (C), flush=True)
+            print('add regulization   C=%f' % (C), flush=True)
         if step_opt:
-            print('add step optimization...eta=%f' % (eta), flush=True)
+            print('add step optimization', flush=True)
         for iter in range(iteration):
             print('iterator: %d' % (iter), flush=True)
             starttime = datetime.datetime.now()
@@ -184,28 +190,28 @@ class loglinear_model(object):
 
                 if b == batch_size:
                     if regulization:
-                        self.weights -= C * eta * self.weights
+                        self.weights *= (1 - C * learn_rate)
+
+                    for id, value in self.g.items():
+                        self.weights[id] += learn_rate * value
+
                     if step_opt:
-                        for id, value in self.g.items():
-                            self.weights[id] += eta * value
-                    else:
-                        for id, value in self.g.items():
-                            self.weights[id] += value
+                        learn_rate = eta * decay_rate ** (global_step / decay_steps)
                     b = 0
-                    eta = max(eta * 0.999, 0.00001)
+                    global_step += 1
                     self.g = defaultdict(float)
 
             if b > 0:
                 if regulization:
-                    self.weights -= C * eta * self.weights
+                    self.weights *= (1 - C * learn_rate)
+
+                for id, value in self.g.items():
+                    self.weights[id] += learn_rate * value
+
                 if step_opt:
-                    for id, value in self.g.items():
-                        self.weights[id] += eta * value
-                else:
-                    for id, value in self.g.items():
-                        self.weights[id] += value
+                    learn_rate = eta * decay_rate ** (global_step / decay_steps)
+                learn_rate += 1
                 b = 0
-                eta = max(eta * 0.999, 0.00001)
                 self.g = defaultdict(float)
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
