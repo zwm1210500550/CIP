@@ -6,8 +6,9 @@ class Config(object):
     def __init__(self, bigdata=False):
         self.epochs = 100
         self.batch_size = 1
+        self.eta = 0.5
         self.c = 0.0001
-        self.eta = 1
+        self.decay = 0.96
         if bigdata:
             self.interval = 10
             self.ftrain = 'bigdata/train.conll'

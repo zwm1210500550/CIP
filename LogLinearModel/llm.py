@@ -78,6 +78,7 @@ class LogLinearModel(object):
                 else:
                     self.update(batch, c, eta * decay ** (count / length))
                 count += 1
+
             print("Epoch %d / %d: " % (epoch, epochs))
             print("\ttrain: %d / %d = %4f" % self.evaluate(train))
             tp, total, precision = self.evaluate(dev)
@@ -97,7 +98,7 @@ class LogLinearModel(object):
 
         for wordseq, i, tag in batch:
             fv = self.instantiate(wordseq, i, tag)
-            fis = [self.fdict[f] for f in fv if f in self.fdict]
+            fis = (self.fdict[f] for f in fv if f in self.fdict)
             for fi in fis:
                 gradients[fi] += 1
 
@@ -107,14 +108,14 @@ class LogLinearModel(object):
             probs = np.exp(scores - logsumexp(scores))
 
             for fv, p in zip(fvs, probs):
-                fis = [self.fdict[f] for f in fv if f in self.fdict]
+                fis = (self.fdict[f] for f in fv if f in self.fdict)
                 for fi in fis:
                     gradients[fi] -= p
 
         if c != 0:
             self.W *= (1 - eta * c)
-        for fi, v in gradients.items():
-            self.W[fi] += eta * v
+        for k, v in gradients.items():
+            self.W[k] += eta * v
 
     def predict(self, wordseq, index):
         fvs = [self.instantiate(wordseq, index, tag)
@@ -181,5 +182,5 @@ class LogLinearModel(object):
     @classmethod
     def load(cls, file):
         with open(file, 'rb') as f:
-            hmm = pickle.load(f)
-        return hmm
+            llm = pickle.load(f)
+        return llm

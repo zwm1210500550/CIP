@@ -57,7 +57,7 @@ class LogLinearModel(object):
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
         training_data = [(wordseq, i, tag)
-                         for wordseq, tagseq in train[:1000]
+                         for wordseq, tagseq in train
                          for i, tag in enumerate(tagseq)]
         # 迭代指定次数训练模型
         for epoch in range(epochs):
@@ -102,7 +102,7 @@ class LogLinearModel(object):
             ti = self.tdict[tag]
 
             fv = self.instantiate(wordseq, i)
-            fis = [self.fdict[f] for f in fv if f in self.fdict]
+            fis = (self.fdict[f] for f in fv if f in self.fdict)
             scores = self.score(fv)
             probs = np.exp(scores - logsumexp(scores))
 
@@ -112,8 +112,8 @@ class LogLinearModel(object):
 
         if c != 0:
             self.W *= (1 - eta * c)
-        for fi, v in gradients.items():
-            self.W[fi] += eta * v
+        for k, v in gradients.items():
+            self.W[k] += eta * v
 
     def predict(self, wordseq, index):
         fv = self.instantiate(wordseq, index)
@@ -179,5 +179,5 @@ class LogLinearModel(object):
     @classmethod
     def load(cls, file):
         with open(file, 'rb') as f:
-            hmm = pickle.load(f)
-        return hmm
+            llm = pickle.load(f)
+        return llm

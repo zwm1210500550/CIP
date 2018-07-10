@@ -40,6 +40,14 @@ tags = sorted(set(np.hstack(tagseqs)))
 start = time.time()
 
 print("Creating Log Linear Model with %d tags" % (len(tags)))
+if args.optimize:
+    print("\tuse feature extracion optimization")
+if args.anneal:
+    print("\tuse simulated annealing")
+if args.regularize:
+    print("\tuse L2 regularization")
+if args.shuffle:
+    print("\tshuffle the data at each epoch")
 llm = LogLinearModel(tags)
 
 print("Using %d sentences to create the feature space" % (len(train)))
@@ -47,6 +55,10 @@ llm.create_feature_space(train)
 print("The size of the feature space is %d" % llm.d)
 
 print("Using SGD algorithm to train the model")
+print("\tepochs: %d\n\tbatch_size: %d\n"
+      "\tc: %f\n\teta: %f\n\tdacay: %f\n\tinterval: %d" %
+      (config.epochs, config.batch_size,
+       config.c, config.eta, config.decay, config.interval))
 llm.SGD(train, dev, config.llmpkl,
         epochs=config.epochs,
         batch_size=config.batch_size,

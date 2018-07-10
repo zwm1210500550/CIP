@@ -38,6 +38,12 @@ tags = sorted(set(np.hstack(tagseqs)))
 start = time.time()
 
 print("Creating Global Linear Model with %d tags" % (len(tags)))
+if args.optimize:
+    print("\tuse feature extracion optimization")
+if args.average:
+    print("\tuse average perceptron")
+if args.shuffle:
+    print("\tshuffle the data at each epoch")
 glm = GlobalLinearModel(tags)
 
 print("Using %d sentences to create the feature space" % (len(train)))
@@ -54,6 +60,7 @@ glm.online(train, dev, config.glmpkl,
 if args.bigdata:
     test = preprocess(config.ftest)
     glm = GlobalLinearModel.load(config.glmpkl)
-    print("Precision of test: %d / %d = %4f" % glm.evaluate(test))
+    print("Precision of test: %d / %d = %4f" %
+          glm.evaluate(test, average=args.average))
 
 print("%4fs elapsed\n" % (time.time() - start))

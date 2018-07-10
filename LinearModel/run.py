@@ -38,6 +38,12 @@ tags = sorted(set(np.hstack(tagseqs)))
 start = time.time()
 
 print("Creating Linear Model with %d tags" % (len(tags)))
+if args.optimize:
+    print("\tuse feature extracion optimization")
+if args.average:
+    print("\tuse average perceptron")
+if args.shuffle:
+    print("\tshuffle the data at each epoch")
 lm = LinearModel(tags)
 
 print("Using %d sentences to create the feature space" % (len(train)))
@@ -54,6 +60,7 @@ lm.online(train, dev, config.lmpkl,
 if args.bigdata:
     test = preprocess(config.ftest)
     lm = LinearModel.load(config.lmpkl)
-    print("Precision of test: %d / %d = %4f" % lm.evaluate(test))
+    print("Precision of test: %d / %d = %4f" %
+          lm.evaluate(test, average=args.average))
 
 print("%4fs elapsed\n" % (time.time() - start))

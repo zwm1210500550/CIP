@@ -88,7 +88,7 @@ class LinearModel(object):
             if tag != pre:
                 fv = self.instantiate(wordseq, i)
                 ti, pi = self.tdict[tag], self.tdict[pre]
-                fis = [self.fdict[f] for f in fv if f in self.fdict]
+                fis = (self.fdict[f] for f in fv if f in self.fdict)
                 for fi in fis:
                     prev_w, prev_r = self.W[fi, [ti, pi]], self.R[fi, [ti, pi]]
                     # 累加权重加上步长乘以权重
@@ -165,5 +165,5 @@ class LinearModel(object):
     @classmethod
     def load(cls, file):
         with open(file, 'rb') as f:
-            hmm = pickle.load(f)
-        return hmm
+            lm = pickle.load(f)
+        return lm

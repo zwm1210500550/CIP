@@ -171,5 +171,5 @@ class LinearModel(object):
     @classmethod
     def load(cls, file):
         with open(file, 'rb') as f:
-            hmm = pickle.load(f)
-        return hmm
+            lm = pickle.load(f)
+        return lm
