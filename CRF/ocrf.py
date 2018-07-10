@@ -57,8 +57,11 @@ class CRF(object):
         self.W = np.zeros((self.d, self.n))
 
     def SGD(self, train, dev, file,
-            epochs, batch_size, c, eta, interval,
-            shuffle):
+            epochs, batch_size, c, eta, decay, interval,
+            anneal, regularize, shuffle):
+        # 记录参数更新次数
+        count = 0
+        # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
         # 迭代指定次数训练模型
         for epoch in range(epochs):
@@ -66,13 +69,21 @@ class CRF(object):
             # 随机打乱数据
             if shuffle:
                 random.shuffle(train)
+            # 设置L2正则化系数
+            if not regularize:
+                c = 0
             # 按照指定大小对数据分割批次
             batches = [train[i:i + batch_size]
                        for i in range(0, len(train), batch_size)]
+            length = len(batches)
             # 根据批次数据更新权重
             for batch in batches:
-                self.update(batch, c, max(eta, 0.00001))
-                # eta *= 0.999
+                if not anneal:
+                    self.update(batch, c)
+                # 设置学习速率的指数衰减
+                else:
+                    self.update(batch, c, eta * decay ** (count / length))
+                count += 1
 
             print("Epoch %d / %d: " % (epoch, epochs))
             print("\ttrain: %d / %d = %4f" % self.evaluate(train))
@@ -88,15 +99,18 @@ class CRF(object):
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
 
-    def update(self, batch, c, eta):
+    def update(self, batch, c, eta=1):
         gradients = defaultdict(float)
 
         for wordseq, tagseq in batch:
             prev_tag = self.BOS
             for i, tag in enumerate(tagseq):
-                for f in self.instantiate(wordseq, i, prev_tag):
-                    if f in self.fdict:
-                        gradients[self.fdict[f], self.tdict[tag]] += 1
+                ti = self.tdict[tag]
+                fis = (self.fdict[f]
+                       for f in self.instantiate(wordseq, i, prev_tag)
+                       if f in self.fdict)
+                for fi in fis:
+                    gradients[fi, ti] += 1
                 prev_tag = tag
 
             alpha = self.forward(wordseq)
@@ -104,24 +118,30 @@ class CRF(object):
             logZ = logsumexp(alpha[-1])
 
             fv = self.instantiate(wordseq, 0, self.BOS)
+            fis = (self.fdict[f] for f in fv if f in self.fdict)
             p = np.exp(self.score(fv) + beta[0] - logZ)
-            for f in fv:
-                if f in self.fdict:
-                    gradients[self.fdict[f]] -= p
+            for fi in fis:
+                gradients[fi] -= p
 
             for i in range(1, len(tagseq)):
-                fvs = [self.instantiate(wordseq, i, prev_tag)
-                       for prev_tag in self.tags]
-                for j, fv in enumerate(fvs):
-                    score = self.score(fv)
-                    p = np.exp(score + alpha[i - 1, j] + beta[i] - logZ)
-                    for f in fv:
-                        if f in self.fdict:
-                            gradients[self.fdict[f]] -= p
+                bifvs = [self.bigram(wordseq, i, prev_tag)
+                         for prev_tag in self.tags]
+                unifv = self.unigram(wordseq, i)
+                unifis = [self.fdict[f] for f in unifv if f in self.fdict]
+                scores = [
+                    self.score(bifv) for bifv in bifvs
+                ] + self.score(unifv)
+                probs = np.exp(scores + alpha[i - 1][:, None] + beta[i] - logZ)
 
-        self.W *= (1 - c)
-        for fi, v in gradients.items():
-            self.W[fi] += eta * v
+                for bifv, p in zip(bifvs, probs):
+                    bifis = [self.fdict[f] for f in bifv if f in self.fdict]
+                    for fi in bifis + unifis:
+                        gradients[fi] -= p
+
+        if c != 0:
+            self.W *= (1 - eta * c)
+        for k, v in gradients.items():
+            self.W[k] += eta * v
 
     def forward(self, wordseq):
         T = len(wordseq)
@@ -131,9 +151,12 @@ class CRF(object):
         alpha[0] = self.score(fv)
 
         for i in range(1, T):
-            fvs = [self.instantiate(wordseq, i, prev_tag)
-                   for prev_tag in self.tags]
-            scores = np.column_stack([self.score(fv) for fv in fvs])
+            bifvs = [self.bigram(wordseq, i, prev_tag)
+                     for prev_tag in self.tags]
+            unifv = self.unigram(wordseq, i)
+            scores = np.transpose([
+                self.score(bifv) for bifv in bifvs
+            ] + self.score(unifv))
             alpha[i] = logsumexp(scores + alpha[i - 1], axis=1)
         return alpha
 
@@ -142,9 +165,12 @@ class CRF(object):
         beta = np.zeros((T, self.n))
 
         for i in reversed(range(T - 1)):
-            fvs = [self.instantiate(wordseq, i + 1, prev_tag)
-                   for prev_tag in self.tags]
-            scores = np.array([self.score(fv) for fv in fvs])
+            bifvs = [self.bigram(wordseq, i + 1, prev_tag)
+                     for prev_tag in self.tags]
+            unifv = self.unigram(wordseq, i + 1)
+            scores = [
+                self.score(bifv) for bifv in bifvs
+            ] + self.score(unifv)
             beta[i] = logsumexp(scores + beta[i + 1], axis=1)
         return beta
 
@@ -157,36 +183,40 @@ class CRF(object):
         delta[0] = self.score(fv)
 
         for i in range(1, T):
-            fvs = [self.instantiate(wordseq, i, prev_tag)
-                   for prev_tag in self.tags]
-            scores = np.array([delta[i - 1][j] + self.score(fv)
-                               for j, fv in enumerate(fvs)])
-            paths[i] = np.argmax(scores, axis=0)
-            delta[i] = scores[paths[i], np.arange(self.n)]
+            bifvs = [self.bigram(wordseq, i, prev_tag)
+                     for prev_tag in self.tags]
+            unifv = self.unigram(wordseq, i)
+            scores = np.transpose([
+                self.score(bifv) for bifv in bifvs
+            ] + self.score(unifv)) + delta[i - 1]
+            paths[i] = np.argmax(scores, axis=1)
+            delta[i] = scores[np.arange(self.n), paths[i]]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
-        for i in range(T - 1, 0, -1):
+        for i in reversed(range(1, T)):
             prev = paths[i, prev]
             predict.append(prev)
         return [self.tags[i] for i in reversed(predict)]
 
     def score(self, fvector):
-        scores = np.array([self.W[self.fdict[f]]
-                           for f in fvector if f in self.fdict])
+        scores = [self.W[self.fdict[f]]
+                  for f in fvector if f in self.fdict]
         return np.sum(scores, axis=0)
 
-    def instantiate(self, wordseq, index, prev_tag):
+    def bigram(self, wordseq, index, prev_tag):
+        return [('01', prev_tag)]
+
+    def unigram(self, wordseq, index):
         word = wordseq[index]
-        prev_word = wordseq[index - 1] if index > 0 else "^^"
-        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else "$$"
+        prev_word = wordseq[index - 1] if index > 0 else '^^'
+        next_word = wordseq[index + 1] if index < len(wordseq) - 1 else '$$'
         prev_char = prev_word[-1]
         next_char = next_word[0]
         first_char = word[0]
         last_char = word[-1]
 
         fvector = []
-        fvector.append(('01', prev_tag))
         fvector.append(('02', word))
         fvector.append(('03', prev_word))
         fvector.append(('04', next_word))
@@ -213,6 +243,11 @@ class CRF(object):
             fvector.append(('15', word))
         return fvector
 
+    def instantiate(self, wordseq, index, prev_tag):
+        bigram = self.bigram(wordseq, index, prev_tag)
+        unigram = self.unigram(wordseq, index)
+        return bigram + unigram
+
     def evaluate(self, sentences):
         tp, total = 0, 0
 
@@ -230,5 +265,5 @@ class CRF(object):
     @classmethod
     def load(cls, file):
         with open(file, 'rb') as f:
-            hmm = pickle.load(f)
-        return hmm
+            crf = pickle.load(f)
+        return crf

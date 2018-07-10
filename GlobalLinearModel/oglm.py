@@ -135,11 +135,12 @@ class GlobalLinearModel(object):
         delta[0] = self.score(fv, average)
 
         for i in range(1, T):
-            fvs = [self.instantiate(wordseq, i, prev_tag)
-                   for prev_tag in self.tags]
-            scores = np.column_stack([
-                self.score(fv, average) for fv in fvs
-            ]) + delta[i - 1]
+            bifvs = [self.bigram(wordseq, i, prev_tag)
+                     for prev_tag in self.tags]
+            unifv = self.unigram(wordseq, i)
+            scores = np.transpose([
+                self.score(bifv, average) for bifv in bifvs
+            ] + self.score(unifv, average)) + delta[i - 1]
             paths[i] = np.argmax(scores, axis=1)
             delta[i] = scores[np.arange(self.n), paths[i]]
         prev = np.argmax(delta[-1])
@@ -157,7 +158,10 @@ class GlobalLinearModel(object):
         scores = self.V[fis] if average else self.W[fis]
         return np.sum(scores, axis=0)
 
-    def instantiate(self, wordseq, index, prev_tag):
+    def bigram(self, wordseq, index, prev_tag):
+        return [('01', prev_tag)]
+
+    def unigram(self, wordseq, index):
         word = wordseq[index]
         prev_word = wordseq[index - 1] if index > 0 else '^^'
         next_word = wordseq[index + 1] if index < len(wordseq) - 1 else '$$'
@@ -167,7 +171,6 @@ class GlobalLinearModel(object):
         last_char = word[-1]
 
         fvector = []
-        fvector.append(('01', prev_tag))
         fvector.append(('02', word))
         fvector.append(('03', prev_word))
         fvector.append(('04', next_word))
@@ -176,7 +179,7 @@ class GlobalLinearModel(object):
         fvector.append(('07', first_char))
         fvector.append(('08', last_char))
 
-        for char in word[1: -1]:
+        for char in word[1:-1]:
             fvector.append(('09', char))
             fvector.append(('10', first_char, char))
             fvector.append(('11', last_char, char))
@@ -187,12 +190,17 @@ class GlobalLinearModel(object):
             if prev_char == char:
                 fvector.append(('13', char, 'consecutive'))
             if i <= 4:
-                fvector.append(('14', word[: i]))
+                fvector.append(('14', word[:i]))
                 fvector.append(('15', word[-i:]))
         if len(word) <= 4:
             fvector.append(('14', word))
             fvector.append(('15', word))
         return fvector
+
+    def instantiate(self, wordseq, index, prev_tag):
+        bigram = self.bigram(wordseq, index, prev_tag)
+        unigram = self.unigram(wordseq, index)
+        return bigram + unigram
 
     def evaluate(self, sentences, average=False):
         tp, total = 0, 0
@@ -211,5 +219,5 @@ class GlobalLinearModel(object):
     @classmethod
     def load(cls, file):
         with open(file, 'rb') as f:
-            hmm = pickle.load(f)
-        return hmm
+            glm = pickle.load(f)
+        return glm
