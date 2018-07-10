@@ -59,8 +59,10 @@ class CRF(object):
     def SGD(self, train, dev, file,
             epochs, batch_size, c, eta, decay, interval,
             anneal, regularize, shuffle):
-        # 记录参数更新次数
+        # 记录更新次数
         count = 0
+        # 记录迭代时间
+        total_time = 0
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
         # 迭代指定次数训练模型
@@ -89,15 +91,19 @@ class CRF(object):
             print("\ttrain: %d / %d = %4f" % self.evaluate(train))
             tp, total, precision = self.evaluate(dev)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
-            print("\t%4fs elapsed" % (time.time() - start))
+
             # 保存效果最好的模型
             if precision > max_precision:
                 self.dump(file)
                 max_e, max_precision = epoch, precision
             elif epoch - max_e > interval:
                 break
+            t = time.time() - start
+            print("\t%4fs elapsed" % t)
+            total_time += t
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
+        print("mean time of each epoch is %4fs" % (total_time / epoch))
 
     def update(self, batch, c, eta=1):
         gradients = defaultdict(float)
