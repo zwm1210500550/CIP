@@ -91,6 +91,9 @@ class CRF(object):
             print("\ttrain: %d / %d = %4f" % self.evaluate(train))
             tp, total, precision = self.evaluate(dev)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
+            t = time.time() - start
+            print("\t%4fs elapsed" % t)
+            total_time += t
 
             # 保存效果最好的模型
             if precision > max_precision:
@@ -98,9 +101,6 @@ class CRF(object):
                 max_e, max_precision = epoch, precision
             elif epoch - max_e > interval:
                 break
-            t = time.time() - start
-            print("\t%4fs elapsed" % t)
-            total_time += t
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
         print("mean time of each epoch is %4fs" % (total_time / epoch))
