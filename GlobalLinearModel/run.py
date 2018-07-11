@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import time
+from datetime import datetime, timedelta
 
 import numpy as np
 
@@ -35,7 +35,7 @@ dev = preprocess(config.fdev)
 wordseqs, tagseqs = zip(*train)
 tags = sorted(set(np.hstack(tagseqs)))
 
-start = time.time()
+start = datetime.now()
 
 print("Creating Global Linear Model with %d tags" % (len(tags)))
 if args.optimize:
@@ -63,4 +63,4 @@ if args.bigdata:
     print("Precision of test: %d / %d = %4f" %
           glm.evaluate(test, average=args.average))
 
-print("%4fs elapsed\n" % (time.time() - start))
+print("%ss elapsed\n" % (datetime.now() - start))

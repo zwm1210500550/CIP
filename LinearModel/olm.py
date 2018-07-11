@@ -2,7 +2,7 @@
 
 import pickle
 import random
-import time
+from datetime import datetime, timedelta
 
 import numpy as np
 
@@ -51,12 +51,12 @@ class LinearModel(object):
 
     def online(self, train, dev, file, epochs, interval, average, shuffle):
         # 记录迭代时间
-        total_time = 0
+        total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
         # 迭代指定次数训练模型
         for epoch in range(epochs):
-            start = time.time()
+            start = datetime.now()
             # 随机打乱数据
             if shuffle:
                 random.shuffle(train)
@@ -71,8 +71,8 @@ class LinearModel(object):
             print("\ttrain: %d / %d = %4f" % result)
             tp, total, precision = self.evaluate(dev, average=average)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
-            t = time.time() - start
-            print("\t%4fs elapsed" % t)
+            t = datetime.now() - start
+            print("\t%ss elapsed" % t)
             total_time += t
 
             # 保存效果最好的模型
@@ -83,7 +83,7 @@ class LinearModel(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %4fs" % (total_time / epoch))
+        print("mean time of each epoch is %s" % (total_time / epoch))
 
     def update(self, batch):
         wordseq, tagseq = batch

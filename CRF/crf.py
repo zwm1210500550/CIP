@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import pickle
-import time
 from collections import defaultdict
+from datetime import datetime, timedelta
 
 import numpy as np
 from scipy.misc import logsumexp
@@ -55,17 +55,17 @@ class CRF(object):
         self.W = np.zeros(self.d)
 
     def SGD(self, train, dev, file,
-            epochs, batch_size, c, eta, decay, interval,
+            epochs, batch_size, interval, c, eta, decay,
             anneal, regularize, shuffle):
         # 记录更新次数
         count = 0
         # 记录迭代时间
-        total_time = 0
+        total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
         # 迭代指定次数训练模型
         for epoch in range(epochs):
-            start = time.time()
+            start = datetime.now()
             # 随机打乱数据
             if shuffle:
                 random.shuffle(train)
@@ -89,8 +89,8 @@ class CRF(object):
             print("\ttrain: %d / %d = %4f" % self.evaluate(train))
             tp, total, precision = self.evaluate(dev)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
-            t = time.time() - start
-            print("\t%4fs elapsed" % t)
+            t = datetime.now() - start
+            print("\t%ss elapsed" % t)
             total_time += t
 
             # 保存效果最好的模型
@@ -101,7 +101,7 @@ class CRF(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %4fs" % (total_time / epoch))
+        print("mean time of each epoch is %s" % (total_time / epoch))
 
     def update(self, batch, c, eta=1):
         gradients = np.zeros(self.d)
@@ -129,7 +129,7 @@ class CRF(object):
 
             for i in range(1, len(tagseq)):
                 for j, tag in enumerate(self.tags):
-                    bifvs = [self.bigram(wordseq, i, prev_tag, tag)
+                    bifvs = [self.bigram(prev_tag, tag)
                              for prev_tag in self.tags]
                     unifv = self.unigram(wordseq, i, tag)
                     unifis = [self.fdict[f] for f in unifv if f in self.fdict]
@@ -159,7 +159,7 @@ class CRF(object):
         for i in range(1, T):
             for j, tag in enumerate(self.tags):
                 scores = np.array([
-                    self.score(self.bigram(wordseq, i, prev_tag, tag))
+                    self.score(self.bigram(prev_tag, tag))
                     for prev_tag in self.tags
                 ]) + self.score(self.unigram(wordseq, i, tag))
                 alpha[i][j] = logsumexp(alpha[i - 1] + scores)
@@ -176,7 +176,7 @@ class CRF(object):
             ]
             for j, prev_tag in enumerate(self.tags):
                 scores = np.array([
-                    self.score(self.bigram(wordseq, i + 1, prev_tag, tag))
+                    self.score(self.bigram(prev_tag, tag))
                     for tag in self.tags
                 ]) + uni_scores
                 beta[i][j] = logsumexp(beta[i + 1] + scores)
@@ -193,7 +193,7 @@ class CRF(object):
 
         for i in range(1, T):
             scores = [
-                np.add([self.score(self.bigram(wordseq, i, prev_tag, tag))
+                np.add([self.score(self.bigram(prev_tag, tag))
                         for prev_tag in self.tags],
                        self.score(self.unigram(wordseq, i, tag)))
                 for tag in self.tags
@@ -253,7 +253,7 @@ class CRF(object):
         return fvector
 
     def instantiate(self, wordseq, index, prev_tag, tag):
-        bigram = self.bigram(wordseq, index, prev_tag, tag)
+        bigram = self.bigram(prev_tag, tag)
         unigram = self.unigram(wordseq, index, tag)
         return bigram + unigram
 

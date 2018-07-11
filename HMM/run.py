@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import time
+from datetime import datetime, timedelta
 
 import numpy as np
 
@@ -25,7 +25,7 @@ dev = preprocess(config.fdev)
 wordseqs, tagseqs = zip(*train)
 words, tags = sorted(set(np.hstack(wordseqs))), sorted(set(np.hstack(tagseqs)))
 
-start = time.time()
+start = datetime.now()
 
 print("Creating HMM with %d words and %d tags" % (len(words), len(tags)))
 hmm = HMM(words, tags)
@@ -43,4 +43,4 @@ if args.bigdata:
     tp, total, precision = hmm.evaluate(test)
     print("Precision of test: %d / %d = %4f" % (tp, total, precision))
 
-print("%4fs elapsed\n" % (time.time() - start))
+print("%ss elapsed\n" % (datetime.now() - start))

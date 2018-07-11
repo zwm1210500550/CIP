@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import time
+from datetime import datetime, timedelta
 
 import numpy as np
 
@@ -37,7 +37,7 @@ dev = preprocess(config.fdev)
 wordseqs, tagseqs = zip(*train)
 tags = sorted(set(np.hstack(tagseqs)))
 
-start = time.time()
+start = datetime.now()
 
 print("Creating Conditional Random Field with %d tags" % (len(tags)))
 if args.optimize:
@@ -55,17 +55,19 @@ crf.create_feature_space(train)
 print("The size of the feature space is %d" % crf.d)
 
 print("Using SGD algorithm to train the model")
-print("\tepochs: %d\n\tbatch_size: %d\n"
-      "\tc: %f\n\teta: %f\n\tdacay: %f\n\tinterval: %d" %
-      (config.epochs, config.batch_size,
-       config.c, config.eta, config.decay, config.interval))
+print("\tepochs: %d\n\tbatch_size: %d\n\tinterval: %d" %
+      (config.epochs, config.batch_size,  config.interval))
+if args.anneal:
+    print("\teta: %f\n\tdacay: %f" % (config.eta, config.decay))
+if args.regularize:
+    print("\tc: %f" % config.c)
 crf.SGD(train, dev, config.crfpkl,
         epochs=config.epochs,
         batch_size=config.batch_size,
+        interval=config.interval,
         c=config.c,
         eta=config.eta,
         decay=config.decay,
-        interval=config.interval,
         anneal=args.anneal,
         regularize=args.regularize,
         shuffle=args.shuffle)
@@ -75,4 +77,4 @@ if args.bigdata:
     crf = CRF.load(config.crfpkl)
     print("Precision of test: %d / %d = %4f" % crf.evaluate(test))
 
-print("%4fs elapsed\n" % (time.time() - start))
+print("%ss elapsed\n" % (datetime.now() - start))

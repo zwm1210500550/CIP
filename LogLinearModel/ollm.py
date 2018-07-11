@@ -2,8 +2,8 @@
 
 import pickle
 import random
-import time
 from collections import defaultdict
+from datetime import datetime, timedelta
 
 import numpy as np
 from scipy.misc import logsumexp
@@ -50,12 +50,12 @@ class LogLinearModel(object):
         self.W = np.zeros((self.d, self.n))
 
     def SGD(self, train, dev, file,
-            epochs, batch_size, c, eta, decay, interval,
+            epochs, batch_size, interval, c, eta, decay,
             anneal, regularize, shuffle):
         # 记录更新次数
         count = 0
         # 记录迭代时间
-        total_time = 0
+        total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
         training_data = [(wordseq, i, tag)
@@ -63,7 +63,7 @@ class LogLinearModel(object):
                          for i, tag in enumerate(tagseq)]
         # 迭代指定次数训练模型
         for epoch in range(epochs):
-            start = time.time()
+            start = datetime.now()
             # 随机打乱数据
             if shuffle:
                 random.shuffle(training_data)
@@ -87,8 +87,8 @@ class LogLinearModel(object):
             print("\ttrain: %d / %d = %4f" % self.evaluate(train))
             tp, total, precision = self.evaluate(dev)
             print("\tdev: %d / %d = %4f" % (tp, total, precision))
-            t = time.time() - start
-            print("\t%4fs elapsed" % t)
+            t = datetime.now() - start
+            print("\t%ss elapsed" % t)
             total_time += t
 
             # 保存效果最好的模型
@@ -99,7 +99,7 @@ class LogLinearModel(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %4fs" % (total_time / epoch))
+        print("mean time of each epoch is %s" % (total_time / epoch))
 
     def update(self, batch, c, eta=1):
         gradients = defaultdict(float)
@@ -115,7 +115,6 @@ class LogLinearModel(object):
             for fi in fis:
                 gradients[fi, ti] += 1
                 gradients[fi] -= probs
-
         if c != 0:
             self.W *= (1 - eta * c)
         for k, v in gradients.items():
@@ -127,8 +126,8 @@ class LogLinearModel(object):
         return self.tags[np.argmax(scores)]
 
     def score(self, fvector):
-        scores = [self.W[self.fdict[f]]
-                  for f in fvector if f in self.fdict]
+        scores = np.array([self.W[self.fdict[f]]
+                           for f in fvector if f in self.fdict])
         return np.sum(scores, axis=0)
 
     def instantiate(self, wordseq, index):
