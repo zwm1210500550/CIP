@@ -116,12 +116,12 @@ class LinearModel(object):
     def score(self, fvector, average=False):
         # 计算特征对应累加权重的得分
         if average:
-            scores = [self.V[self.fdict[f]]
-                      for f in fvector if f in self.fdict]
+            scores = (self.V[self.fdict[f]]
+                      for f in fvector if f in self.fdict)
         # 计算特征对应未累加权重的得分
         else:
-            scores = [self.W[self.fdict[f]]
-                      for f in fvector if f in self.fdict]
+            scores = (self.W[self.fdict[f]]
+                      for f in fvector if f in self.fdict)
         return sum(scores)
 
     def instantiate(self, wordseq, index, tag):

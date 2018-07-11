@@ -55,6 +55,7 @@ class GlobalLinearModel(object):
         self.W = np.zeros((self.d, self.n))
         # 累加特征权重
         self.V = np.zeros((self.d, self.n))
+        self.BF = [self.bigram(prev_tag) for prev_tag in self.tags]
 
     def online(self, train, dev, file, epochs, interval, average, shuffle):
         # 记录迭代时间
@@ -137,15 +138,15 @@ class GlobalLinearModel(object):
         T = len(wordseq)
         delta = np.zeros((T, self.n))
         paths = np.zeros((T, self.n), dtype='int')
-        bifvs = [self.bigram(prev_tag) for prev_tag in self.tags]
-        biscores = np.array([self.score(bifv, average) for bifv in bifvs])
+        biscores = np.array([self.score(bifv, average)
+                             for bifv in self.BF])
 
         fv = self.instantiate(wordseq, 0, self.BOS)
         delta[0] = self.score(fv, average)
 
         for i in range(1, T):
-            unifv = self.unigram(wordseq, i)
-            scores = (biscores + self.score(unifv, average)).T + delta[i - 1]
+            uniscores = self.score(self.unigram(wordseq, i), average)
+            scores = (biscores + uniscores).T + delta[i - 1]
             paths[i] = np.argmax(scores, axis=1)
             delta[i] = scores[np.arange(self.n), paths[i]]
         prev = np.argmax(delta[-1])

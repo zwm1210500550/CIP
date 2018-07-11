@@ -157,8 +157,8 @@ class CRF(object):
         alpha[0] = self.score(fv)
 
         for i in range(1, T):
-            unifv = self.unigram(wordseq, i)
-            scores = np.transpose(biscores + self.score(unifv))
+            uniscores = self.score(self.unigram(wordseq, i))
+            scores = np.transpose(biscores + uniscores)
             alpha[i] = logsumexp(scores + alpha[i - 1], axis=1)
         return alpha
 
@@ -169,8 +169,8 @@ class CRF(object):
         biscores = np.array([self.score(bifv) for bifv in bifvs])
 
         for i in reversed(range(T - 1)):
-            unifv = self.unigram(wordseq, i + 1)
-            scores = biscores + self.score(unifv)
+            uniscores = self.score(self.unigram(wordseq, i + 1))
+            scores = biscores + uniscores
             beta[i] = logsumexp(scores + beta[i + 1], axis=1)
         return beta
 
@@ -185,8 +185,8 @@ class CRF(object):
         delta[0] = self.score(fv)
 
         for i in range(1, T):
-            unifv = self.unigram(wordseq, i)
-            scores = np.transpose(biscores + self.score(unifv)) + delta[i - 1]
+            uniscores = self.score(self.unigram(wordseq, i))
+            scores = np.transpose(biscores + uniscores) + delta[i - 1]
             paths[i] = np.argmax(scores, axis=1)
             delta[i] = scores[np.arange(self.n), paths[i]]
         prev = np.argmax(delta[-1])

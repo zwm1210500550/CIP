@@ -53,6 +53,10 @@ class GlobalLinearModel(object):
         self.W = np.zeros(self.d)
         # 累加特征权重
         self.V = np.zeros(self.d)
+        self.BF = [
+            [self.bigram(prev_tag, tag) for prev_tag in self.tags]
+            for tag in self.tags
+        ]
 
     def online(self, train, dev, file, epochs, interval, average, shuffle):
         # 记录迭代时间
@@ -118,19 +122,21 @@ class GlobalLinearModel(object):
         T = len(wordseq)
         delta = np.zeros((T, self.n))
         paths = np.zeros((T, self.n), dtype='int')
+        biscores = np.array([
+            [self.score(bifv, average) for bifv in bifvs]
+            for bifvs in self.BF
+        ])
 
         fvs = [self.instantiate(wordseq, 0, self.BOS, tag)
                for tag in self.tags]
         delta[0] = [self.score(fv, average) for fv in fvs]
 
         for i in range(1, T):
-            scores = [
-                np.add([
-                    self.score(self.bigram(prev_tag, tag), average)
-                    for prev_tag in self.tags
-                ], self.score(self.unigram(wordseq, i, tag), average))
+            uniscores = np.array([
+                self.score(self.unigram(wordseq, i, tag), average)
                 for tag in self.tags
-            ] + delta[i - 1]
+            ])
+            scores = biscores + uniscores[:, None] + delta[i - 1]
             paths[i] = np.argmax(scores, axis=1)
             delta[i] = scores[np.arange(self.n), paths[i]]
         prev = np.argmax(delta[-1])
@@ -152,7 +158,7 @@ class GlobalLinearModel(object):
                       for f in fvector if f in self.fdict]
         return sum(scores)
 
-    def bigram(self, wordseq, index, prev_tag, tag):
+    def bigram(self, prev_tag, tag):
         return [('01', tag, prev_tag)]
 
     def unigram(self, wordseq, index, tag):

@@ -53,6 +53,11 @@ class CRF(object):
 
         # 特征权重
         self.W = np.zeros(self.d)
+        self.BF = [
+            [self.bigram(prev_tag, tag) for prev_tag in self.tags]
+            for tag in self.tags
+        ]
+        self.BS = np.zeros((self.n, self.n))
 
     def SGD(self, train, dev, file,
             epochs, batch_size, interval, c, eta, decay,
@@ -129,16 +134,12 @@ class CRF(object):
 
             for i in range(1, len(tagseq)):
                 for j, tag in enumerate(self.tags):
-                    bifvs = [self.bigram(prev_tag, tag)
-                             for prev_tag in self.tags]
                     unifv = self.unigram(wordseq, i, tag)
                     unifis = [self.fdict[f] for f in unifv if f in self.fdict]
-                    scores = np.array([
-                        self.score(bifv) for bifv in bifvs
-                    ]) + self.score(unifv)
+                    scores = self.BS[j] + self.score(unifv)
                     probs = np.exp(scores + alpha[i - 1] + beta[i, j] - logZ)
 
-                    for bifv, p in zip(bifvs, probs):
+                    for bifv, p in zip(self.BF[j], probs):
                         bifis = [self.fdict[f]
                                  for f in bifv if f in self.fdict]
                         for fi in bifis + unifis:
@@ -147,6 +148,10 @@ class CRF(object):
         if c != 0:
             self.W *= (1 - eta * c)
         self.W += eta * gradients
+        self.BS = np.array([
+            [self.score(bifv) for bifv in bifvs]
+            for bifvs in self.BF
+        ])
 
     def forward(self, wordseq):
         T = len(wordseq)
@@ -157,12 +162,12 @@ class CRF(object):
         alpha[0] = [self.score(fv) for fv in fvs]
 
         for i in range(1, T):
-            for j, tag in enumerate(self.tags):
-                scores = np.array([
-                    self.score(self.bigram(prev_tag, tag))
-                    for prev_tag in self.tags
-                ]) + self.score(self.unigram(wordseq, i, tag))
-                alpha[i][j] = logsumexp(alpha[i - 1] + scores)
+            uniscores = np.array([
+                self.score(self.unigram(wordseq, i, tag))
+                for tag in self.tags
+            ])
+            scores = self.BS + uniscores[:, None]
+            alpha[i] = logsumexp(alpha[i - 1] + scores, axis=1)
         return alpha
 
     def backward(self, wordseq):
@@ -170,16 +175,12 @@ class CRF(object):
         beta = np.zeros((T, self.n))
 
         for i in reversed(range(T - 1)):
-            uni_scores = [
+            uniscores = np.array([
                 self.score(self.unigram(wordseq, i + 1, tag))
                 for tag in self.tags
-            ]
-            for j, prev_tag in enumerate(self.tags):
-                scores = np.array([
-                    self.score(self.bigram(prev_tag, tag))
-                    for tag in self.tags
-                ]) + uni_scores
-                beta[i][j] = logsumexp(beta[i + 1] + scores)
+            ])
+            scores = self.BS.T + uniscores
+            beta[i] = logsumexp(beta[i + 1] + scores, axis=1)
         return beta
 
     def predict(self, wordseq):
@@ -192,12 +193,11 @@ class CRF(object):
         delta[0] = [self.score(fv) for fv in fvs]
 
         for i in range(1, T):
-            scores = [
-                np.add([self.score(self.bigram(prev_tag, tag))
-                        for prev_tag in self.tags],
-                       self.score(self.unigram(wordseq, i, tag)))
+            uniscores = np.array([
+                self.score(self.unigram(wordseq, i, tag))
                 for tag in self.tags
-            ] + delta[i - 1]
+            ])
+            scores = self.BS + uniscores[:, None] + delta[i - 1]
             paths[i] = np.argmax(scores, axis=1)
             delta[i] = scores[np.arange(self.n), paths[i]]
         prev = np.argmax(delta[-1])
@@ -213,7 +213,7 @@ class CRF(object):
                   for f in fvector if f in self.fdict]
         return sum(scores)
 
-    def bigram(self, wordseq, index, prev_tag, tag):
+    def bigram(self, prev_tag, tag):
         return [('01', tag, prev_tag)]
 
     def unigram(self, wordseq, index, tag):
