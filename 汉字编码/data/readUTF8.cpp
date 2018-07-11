@@ -22,7 +22,9 @@ int main(void){
 		fclose(fp2);
 		return 0;
 	}
-	fread(buffer,sizeof(char),3,fp);//跳过文件头BOM 
+	fread(buffer,sizeof(char),3,fp);
+	if(buffer[0]==0xEF && buffer[1]== 0xBB && buffer[2]==0xBF);//是否跳过文件头BOM 
+	else fseek(fp,0,SEEK_SET);
 	ch=fgetc(fp);
 	while(ch!=EOF){		
 		int n=getByteType(ch);
