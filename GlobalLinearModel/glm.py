@@ -63,6 +63,7 @@ class GlobalLinearModel(object):
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
+
         # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = datetime.now()

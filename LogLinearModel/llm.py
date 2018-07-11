@@ -56,6 +56,7 @@ class LogLinearModel(object):
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
+
         training_data = [(wordseq, i, tag)
                          for wordseq, tagseq in train
                          for i, tag in enumerate(tagseq)]

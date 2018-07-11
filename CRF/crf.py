@@ -53,6 +53,7 @@ class CRF(object):
 
         # 特征权重
         self.W = np.zeros(self.d)
+        # Bigram特征及对应权重分值
         self.BF = [
             [self.bigram(prev_tag, tag) for prev_tag in self.tags]
             for tag in self.tags
@@ -68,6 +69,7 @@ class CRF(object):
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
+
         # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = datetime.now()
@@ -109,7 +111,7 @@ class CRF(object):
         print("mean time of each epoch is %s" % (total_time / epoch))
 
     def update(self, batch, c, eta=1):
-        gradients = np.zeros(self.d)
+        gradients = defaultdict(float)
 
         for wordseq, tagseq in batch:
             prev_tag = self.BOS
@@ -147,7 +149,8 @@ class CRF(object):
 
         if c != 0:
             self.W *= (1 - eta * c)
-        self.W += eta * gradients
+        for k, v in gradients.items():
+            self.W[k] += eta * v
         self.BS = np.array([
             [self.score(bifv) for bifv in bifvs]
             for bifvs in self.BF
