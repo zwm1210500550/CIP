@@ -1,8 +1,8 @@
 import datetime
 import numpy as np
 import random
-from scipy.misc import logsumexp
 from collections import defaultdict
+from scipy.misc import logsumexp
 from config import config
 
 
@@ -145,22 +145,22 @@ class loglinear_model(object):
                 if predict_tag == tags[j]:
                     correct_num += 1
 
-        return correct_num, total_num, correct_num / total_num
+        return (correct_num, total_num, correct_num / total_num)
 
     def SGD_train(self, iteration, batch_size=50, shuffle=False, regulization=False, step_opt=False, eta=0.5, C=0.0001,
                   exitor=10):
         b = 0
-        counter = 0
         max_dev_precision = 0
+        counter = 0
         global_step = 1
         decay_steps = 100000
         decay_rate = 0.96
         learn_rate = eta
 
         data = self.train_data.split()
-        print('eta=%f' % (eta))
+        print('eta=%f' % eta)
         if regulization:
-            print('add regulization   C=%f' % (C), flush=True)
+            print('add regulization...C=%f' % (C), flush=True)
         if step_opt:
             print('add step optimization', flush=True)
         for iter in range(iteration):
@@ -176,7 +176,8 @@ class loglinear_model(object):
                 gold_tag = data[i][2]
                 gold_feature = self.create_feature_template(sentence, gold_tag, j)
                 for f in gold_feature:
-                    self.g[self.features[f]] += 1
+                    if f in self.features:
+                        self.g[self.features[f]] += 1
 
                 feature_list = [self.create_feature_template(sentence, tag, j) for tag in self.tag_list]
                 scores = [self.dot(template) for template in feature_list]
@@ -191,10 +192,8 @@ class loglinear_model(object):
                 if b == batch_size:
                     if regulization:
                         self.weights *= (1 - C * learn_rate)
-
                     for id, value in self.g.items():
-                        self.weights[id] += learn_rate * value
-
+                        self.weights[id] += eta * value
                     if step_opt:
                         learn_rate = eta * decay_rate ** (global_step / decay_steps)
                     b = 0
@@ -204,14 +203,12 @@ class loglinear_model(object):
             if b > 0:
                 if regulization:
                     self.weights *= (1 - C * learn_rate)
-
                 for id, value in self.g.items():
-                    self.weights[id] += learn_rate * value
-
+                    self.weights[id] += eta * value
                 if step_opt:
                     learn_rate = eta * decay_rate ** (global_step / decay_steps)
-                learn_rate += 1
                 b = 0
+                global_step += 1
                 self.g = defaultdict(float)
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
@@ -241,11 +238,11 @@ if __name__ == '__main__':
     iterator = config['iterator']
     batchsize = config['batchsize']
     shuffle = config['shuffle']
+    exitor = config['exitor']
     regulization = config['regulization']
     step_opt = config['step_opt']
     C = config['C']
     eta = config['eta']
-    exitor = config['exitor']
 
     starttime = datetime.datetime.now()
     lm = loglinear_model(train_data_file, dev_data_file, test_data_file)

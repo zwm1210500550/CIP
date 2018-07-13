@@ -12,7 +12,7 @@
     test.conll: 测试集
 ./result:
     origin.txt: 初始版本，小数据测试
-    partial_feature: 使用部分特征优化后，小数据测试
+    partial.txt: 使用部分特征优化后，小数据测试
 ./src:
     CRF.py: 初始版本的代码
     CRF-partial-feature.py: 使用特征优化的代码
@@ -33,12 +33,17 @@
 ```python
 #配置文件中各个参数
 config = {
-    'train_data_file': './data/train.conll',   #训练集文件,大数据改为'./big-data/train.conll'
-    'dev_data_file': './data/dev.conll',       #开发集文件,大数据改为'./big-data/dev.conll'
-    'test_data_file': './data/dev.conll',      #测试集文件,大数据改为'./big-data/test.conll'
-    'batchsize': 1,                            #是否使用averaged percetron
-    'iterator': 20,                            #最大迭代次数
-    'shuffle': False                           #每次迭代是否打乱数据
+    'train_data_file': './data/train.conll',   # 训练集文件,大数据改为'./big-data/train.conll'
+    'dev_data_file': './data/dev.conll',       # 开发集文件,大数据改为'./big-data/dev.conll'
+    'test_data_file': './data/dev.conll',      # 测试集文件,大数据改为'./big-data/test.conll'
+    'batchsize': 1,                            # 是否使用averaged percetron
+    'iterator': 100,                           # 最大迭代次数
+    'shuffle': False                           # 每次迭代是否打乱数据
+    'regulization': False,                     # 是否正则化
+    'step_opt': False,                         # 是否步长优化
+    'exitor': 10,                              # 连续多少个迭代没有提升就退出
+    'eta': 0.5,                                # 初始步长
+    'C': 0.0001                                # 正则化系数,regulization为False时无效
 }
 ```
 
@@ -56,15 +61,14 @@ $ python src/CRF-partial-feature.py    #修改config.py文件中的参数
 
 开发集：data/dev.conll
 
-| 文件         | CRF.py | CRF.py | CRF-partial-feature.py | CRF-partial-feature.py |
-| :----------- | ------------ | ------------ | --------------- | --------------- |
-| 是否正则化 | 否 |  | 否 |  |
-| 是否步长优化 | 否 |  | 否 |  |
-| 是否打乱数据 | 否 | 否 | 否 | 否 |
-| 训练集准确率 | 100% |  | 100% |  |
-| 开发集准确率 | 88.03% |  | 88.47% |  |
-| 迭代次数     | 19 |  | 20 |  |
-| 最大迭代次数 | 20           | 20           | 20 | 20 |
+| partial-feature | 初始步长 | batch-size | 步长优化 |  正则化   | 打乱数据 | 迭代次数 | dev准确率 | 时间/迭代 |
+| :-------------: | -------- | :--------: | :------: | :-------: | :------: | :------: | :-------: | :-------: |
+|        ×        | 0.5      |     1      |    ×     |     ×     |    √     |  26/36   |  88.68%   |    82s    |
+|        ×        | 0.5      |     1      |    √     | C=0.00001 |    √     |  26/36   |  88.70%   |    70s    |
+|        √        | 0.5      |     1      |    ×     |     ×     |    √     |   9/19   |  88.94%   |    17s    |
+|        √        | 0.5      |     1      |    √     | C=0.00001 |    √     |  10/20   |  88.96%   |    17s    |
+
+
 
 ##### (2)大数据测试
 
@@ -74,14 +78,11 @@ $ python src/CRF-partial-feature.py    #修改config.py文件中的参数
 
 测试集：big-data/test.conll
 
-| 文件         | CRF.py | CRF.py | CRF-partial-feature.py | CRF-partial-feature.py |
-| :----------- | ------ | ------ | ---------------------- | ---------------------- |
-| 是否正则化   | 否     |        | 否                     |                        |
-| 是否步长优化 | 否     |        | 否                     |                        |
-| 是否打乱数据 | 否     | 否     | 否                     | 否                     |
-| 训练集准确率 |        |        |                        |                        |
-| 开发集准确率 |        |        |                        |                        |
-| 测试集准确率 |        |        |                        |                        |
-| 迭代次数     |        |        |                        |                        |
-| 最大迭代次数 | 20     | 20     | 20                     | 20                     |
+| partial-feature | 初始步长 | batch-size | 步长优化 | 正则化 | 打乱数据 | 迭代次数 | dev准确率 | test准确率 | 时间/迭代 |
+| :-------------: | -------- | :--------: | :------: | :----: | :------: | :------: | :-------: | ---------- | :-------: |
+|        √        | 0.2      |     1      |    ×     |   ×    |    √     |  11/21   |  94.28%   | 93.92%     |  ~13min   |
+|        √        | 0.1      |     30     |    ×     |   ×    |    √     |  12/22   |  94.38%   | 94.18%     |  ~13min   |
 
+
+
+​	

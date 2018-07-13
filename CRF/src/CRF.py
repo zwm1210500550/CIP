@@ -2,6 +2,7 @@ import datetime
 import numpy as np
 import random
 from scipy.misc import logsumexp
+from collections import defaultdict
 from config import config
 
 
@@ -14,7 +15,7 @@ class dataset(object):
         tag = []
         word_num = 0
         f = open(filename, encoding='utf-8')
-        while (True):
+        while True:
             line = f.readline()
             if not line:
                 break
@@ -50,14 +51,15 @@ class CRF(object):
         self.test_data = dataset(test_data_file) if test_data_file != None else None
         self.features = {}
         self.weights = []
-        self.v = []
         self.tag2id = {}
-        self.id2tag = {}
         self.tags = []
         self.EOS = 'EOS'
         self.BOS = 'BOS'
 
-    def create_feature_template(self, sentence, position, pre_tag, cur_tag):
+    def create_bigram_feature(self, pre_tag, cur_tag):
+        return ['01:' + cur_tag + '*' + pre_tag]
+
+    def create_unigram_feature(self, sentence, position, cur_tag):
         template = []
         cur_word = sentence[position]
         cur_word_first_char = cur_word[0]
@@ -76,7 +78,6 @@ class CRF(object):
             next_word = sentence[position + 1]
             next_word_first_char = sentence[position + 1][0]
 
-        template.append('01:' + cur_tag + '*' + pre_tag)
         template.append('02:' + cur_tag + '*' + cur_word)
         template.append('03:' + cur_tag + '*' + last_word)
         template.append('04:' + cur_tag + '*' + next_word)
@@ -105,6 +106,12 @@ class CRF(object):
             template.append('15:' + cur_tag + '*' + sentence[position][-(i + 1)::])
         return template
 
+    def create_feature_template(self, sentence, position, pre_tag, cur_tag):
+        template = []
+        template.extend(self.create_bigram_feature(pre_tag, cur_tag))
+        template.extend(self.create_unigram_feature(sentence, position, cur_tag))
+        return template
+
     def create_feature_space(self):
         for i in range(len(self.train_data.sentences)):
             sentence = self.train_data.sentences[i]
@@ -123,24 +130,25 @@ class CRF(object):
                         self.tags.append(tag)
         self.tags = sorted(self.tags)
         self.tag2id = {t: i for i, t in enumerate(self.tags)}
-        self.id2tag = {i: t for i, t in enumerate(self.tags)}
         self.weights = np.zeros(len(self.features))
-        self.g = np.zeros(len(self.features))
+        self.g = defaultdict(float)
+        self.bigram_features = [
+            [self.create_bigram_feature(prev_tag, tag) for prev_tag in self.tags]
+            for tag in self.tags
+        ]
+        self.bigram_scores = np.zeros((len(self.tags), len(self.tags)))
         print("the total number of features is %d" % (len(self.features)))
 
     def score(self, feature):
-        score = 0
-        for f in feature:
-            if f in self.features:
-                score += self.weights[self.features[f]]
-        return score
+        scores = [self.weights[self.features[f]] for f in feature if f in self.features]
+        return sum(scores)
 
     def predict(self, sentence):
         states = len(sentence)
         type = len(self.tag2id)
 
         max_score = np.zeros((states, type))
-        paths = np.zeros((states, type))
+        paths = np.zeros((states, type), dtype='int')
 
         for j in range(type):
             feature = self.create_feature_template(sentence, 0, self.BOS, self.tags[j])
@@ -149,21 +157,25 @@ class CRF(object):
 
         # 动态规划
         for i in range(1, states):
-            for j in range(type):
-                features = [self.create_feature_template(sentence, i, tag, self.tags[j]) for tag in self.tags]
-                cur_score = [self.score(feature) for feature in features]
-                max_score[i][j] = max(cur_score + max_score[i - 1])
-                paths[i][j] = np.argmax(cur_score + max_score[i - 1])
+            unigram_scores = np.array([self.score(self.create_unigram_feature(sentence, i, tag)) for tag in self.tags])
+            scores = self.bigram_scores + unigram_scores[:, None] + max_score[i - 1]
+            paths[i] = np.argmax(scores, axis=1)
+            max_score[i] = np.max(scores, axis=1)
+            # for j in range(type):
+            #     unigram_scores = self.score(self.create_unigram_feature(sentence, i, self.tags[j]))
+            #     scores = unigram_scores + np.array(self.bigram_scores[j])
+            #     max_score[i][j] = max(scores + max_score[i - 1])
+            #     paths[i][j] = np.argmax(scores + max_score[i - 1])
 
         gold_path = []
         cur_state = states - 1
         step = np.argmax(max_score[cur_state])
-        gold_path.insert(0, self.id2tag[step])
+        gold_path.insert(0, self.tags[step])
         while True:
             step = int(paths[cur_state][step])
             if step == -1:
                 break
-            gold_path.insert(0, self.id2tag[step])
+            gold_path.insert(0, self.tags[step])
             cur_state -= 1
         return gold_path
 
@@ -179,29 +191,27 @@ class CRF(object):
                 if tags[j] == predict[j]:
                     correct_num += 1
 
-        return (correct_num, total_num, correct_num / total_num)
+        return correct_num, total_num, correct_num / total_num
 
     def forward(self, sentence):
         path_scores = np.zeros((len(sentence), len(self.tags)))
-
-        features = [self.create_feature_template(sentence, 0, self.BOS, tag) for tag in self.tags]
-        path_scores[0] = [self.score(feature) for feature in features]
-
+        path_scores[0] = [self.score(self.create_feature_template(sentence, 0, self.BOS, tag))
+                          for tag in self.tags]
         for i in range(1, len(sentence)):
-            for j in range(len(self.tags)):
-                features = [self.create_feature_template(sentence, i, pre_tag, self.tags[j]) for pre_tag in self.tags]
-                scores = [self.score(feature) for feature in features]
-                path_scores[i][j] = logsumexp(path_scores[i - 1] + scores)
+            unigram_scores = np.array([self.score(self.create_unigram_feature(sentence, i, tag)) for tag in self.tags])
+            scores = self.bigram_scores + unigram_scores[:, None]
+            path_scores[i] = logsumexp(path_scores[i - 1] + scores, axis=1)
+
         return path_scores
 
     def backward(self, sentence):
         path_scores = np.zeros((len(sentence), len(self.tags)))
 
         for i in reversed(range(len(sentence) - 1)):
-            for j in range(len(self.tags)):
-                features = [self.create_feature_template(sentence, i + 1, self.tags[j], tag) for tag in self.tags]
-                scores = [self.score(feature) for feature in features]
-                path_scores[i][j] = logsumexp(path_scores[i + 1] + scores)
+            unigram_scores = np.array(
+                [self.score(self.create_unigram_feature(sentence, i + 1, tag)) for tag in self.tags])
+            scores = self.bigram_scores.T + unigram_scores
+            path_scores[i] = logsumexp(path_scores[i + 1] + scores, axis=1)
         return path_scores
 
     def update_gradient(self, sentence, tags):
@@ -220,40 +230,39 @@ class CRF(object):
         backward_scores = self.backward(sentence)
         dinominator = logsumexp(forward_scores[-1])
 
-        for i in range(len(sentence)):
-            if i == 0:
-                pre_tag = self.BOS
-                for cur_tag in self.tags:
-                    template = self.create_feature_template(sentence, i, pre_tag, cur_tag)
-                    score = self.score(template)
-                    forward = 0
-                    backward = backward_scores[i][self.tag2id[cur_tag]]
-                    p = np.exp(forward + score + backward - dinominator)
+        for i, tag in enumerate(self.tags):
+            features = self.create_feature_template(sentence, 0, self.BOS, tag)
+            features_id = (self.features[f] for f in features if f in self.features)
+            p = np.exp(self.score(features) + backward_scores[0, i] - dinominator)
+            for id in features_id:
+                self.g[id] -= p
 
-                    for f in template:
-                        if f in self.features:
-                            self.g[self.features[f]] -= p
-            else:
-                for pre_tag in self.tags:
-                    for cur_tag in self.tags:
-                        template = self.create_feature_template(sentence, i, pre_tag, cur_tag)
-                        score = self.score(template)
-                        forward = forward_scores[i - 1][self.tag2id[pre_tag]]
-                        backward = backward_scores[i][self.tag2id[cur_tag]]
-                        p = np.exp(forward + score + backward - dinominator)
+        for i in range(1, len(sentence)):
+            for j, tag in enumerate(self.tags):
+                unigram_features = self.create_unigram_feature(sentence, i, tag)
+                unigram_features_id = [self.features[f] for f in unigram_features if f in self.features]
+                scores = self.bigram_scores[j] + self.score(unigram_features)
+                probs = np.exp(scores + forward_scores[i - 1] + backward_scores[i, j] - dinominator)
 
-                        for f in template:
-                            if f in self.features:
-                                self.g[self.features[f]] -= p
+                for bigram_feature, p in zip(self.bigram_features[j], probs):
+                    bigram_feature_id = [self.features[f]
+                                         for f in bigram_feature if f in self.features]
+                    for fi in bigram_feature_id + unigram_features_id:
+                        self.g[fi] -= p
 
-    def SGD_train(self, iteration=20, batchsize=1, shuffle=False, regulization=False, step_opt=False, eta=0.5,
-                  C=0.0001):
+    def SGD_train(self, iteration=100, batchsize=1, shuffle=False, regulization=False, step_opt=False, eta=0.5,
+                  C=0.0001, exitor=10):
         max_dev_precision = 0
         counter = 0
+        global_step = 1
+        decay_steps = len(self.train_data.sentences) / batchsize
+        decay_rate = 0.96
+        learn_rate = eta
+        print('eta=%f' % eta)
         if regulization:
             print('add regulization...C=%f' % (C), flush=True)
         if step_opt:
-            print('add step optimization...eta=%f' % (eta), flush=True)
+            print('add step optimization', flush=True)
         for iter in range(iteration):
             b = 0
             starttime = datetime.datetime.now()
@@ -267,25 +276,33 @@ class CRF(object):
                 tags = self.train_data.tags[i]
                 self.update_gradient(sentence, tags)
                 if b == batchsize:
-                    if step_opt:
-                        self.weights += eta * self.g
-                    else:
-                        self.weights += self.g
                     if regulization:
-                        self.weights -= C * eta * self.weights
-                    eta = max(eta * 0.999, 0.00001)
-                    self.g = np.zeros(len(self.features))
+                        self.weights *= (1 - C * eta)
+                    for id, value in self.g.items():
+                        self.weights[id] += value * learn_rate
+                    if step_opt:
+                        learn_rate = eta * decay_rate ** (global_step / decay_steps)
+                    global_step += 1
+                    self.g = defaultdict(float)
+                    self.bigram_scores = np.array([
+                        [self.score(f) for f in bigram_features]
+                        for bigram_features in self.bigram_features
+                    ])
                     b = 0
 
             if b > 0:
-                if step_opt:
-                    self.weights += eta * self.g
-                else:
-                    self.weights += self.g
                 if regulization:
-                    self.weights -= C * eta * self.weights
-                eta = max(eta * 0.999, 0.00001)
-                self.g = np.zeros(len(self.features))
+                    self.weights *= (1 - C * eta)
+                for id, value in self.g.items():
+                    self.weights[id] += value * learn_rate
+                if step_opt:
+                    learn_rate = eta * decay_rate ** (global_step / decay_steps)
+                global_step += 1
+                self.g = defaultdict(float)
+                self.bigram_scores = np.array([
+                    [self.score(f) for f in bigram_features]
+                    for bigram_features in self.bigram_features
+                ])
                 b = 0
 
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data)
@@ -306,7 +323,7 @@ class CRF(object):
 
             endtime = datetime.datetime.now()
             print("\titeration executing time is " + str((endtime - starttime)) + " s", flush=True)
-            if counter >= 10:
+            if counter >= exitor:
                 break
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
 
@@ -322,12 +339,12 @@ if __name__ == '__main__':
     step_opt = config['step_opt']
     C = config['C']
     eta = config['eta']
+    exitor = config['exitor']
 
     starttime = datetime.datetime.now()
     crf = CRF(train_data_file, dev_data_file, test_data_file)
     crf.create_feature_space()
     print(crf.tag2id)
-    crf.SGD_train(iterator, batchsize, shuffle, regulization, step_opt, eta, C)
-    # print(crf.forward(['你', '好', '啊']))
+    crf.SGD_train(iterator, batchsize, shuffle, regulization, step_opt, eta, C, exitor)
     endtime = datetime.datetime.now()
     print("executing time is " + str((endtime - starttime).seconds) + " s")

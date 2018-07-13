@@ -13,7 +13,7 @@ class dataset(object):
         tag = []
         word_num = 0
         f = open(filename, encoding='utf-8')
-        while (True):
+        while True:
             line = f.readline()
             if not line:
                 break
@@ -53,8 +53,12 @@ class global_liner_model(object):
         self.tag2id = {}
         self.id2tag = {}
         self.tags = []
+        self.BOS = 'BOS'
 
-    def create_feature_template(self, sentence, position, pre_tag, cur_tag):
+    def create_bigram_feature(self, pre_tag, cur_tag):
+        return ['01:' + cur_tag + '*' + pre_tag]
+
+    def create_unigram_feature(self, sentence, position, cur_tag):
         template = []
         cur_word = sentence[position]
         cur_word_first_char = cur_word[0]
@@ -73,7 +77,6 @@ class global_liner_model(object):
             next_word = sentence[position + 1]
             next_word_first_char = sentence[position + 1][0]
 
-        template.append('01:' + cur_tag + '*' + pre_tag)
         template.append('02:' + cur_tag + '*' + cur_word)
         template.append('03:' + cur_tag + '*' + last_word)
         template.append('04:' + cur_tag + '*' + next_word)
@@ -102,13 +105,19 @@ class global_liner_model(object):
             template.append('15:' + cur_tag + '*' + sentence[position][-(i + 1)::])
         return template
 
+    def create_feature_template(self, sentence, position, pre_tag, cur_tag):
+        template = []
+        template.extend(self.create_bigram_feature(pre_tag, cur_tag))
+        template.extend(self.create_unigram_feature(sentence, position, cur_tag))
+        return template
+
     def create_feature_space(self):
         for i in range(len(self.train_data.sentences)):
             sentence = self.train_data.sentences[i]
             tags = self.train_data.tags[i]
             for j in range(len(sentence)):
                 if j == 0:
-                    pre_tag = '^'
+                    pre_tag = self.BOS
                 else:
                     pre_tag = tags[j - 1]
                 template = self.create_feature_template(sentence, j, pre_tag, tags[j])
@@ -120,55 +129,50 @@ class global_liner_model(object):
                         self.tags.append(tag)
         self.tags = sorted(self.tags)
         self.tag2id = {t: i for i, t in enumerate(self.tags)}
-        self.id2tag = {i: t for i, t in enumerate(self.tags)}
         self.weights = np.zeros(len(self.features))
         self.v = np.zeros(len(self.features))
+        self.update_times = np.zeros(len(self.features))
+        self.bigram_features = [
+            [self.create_bigram_feature(prev_tag, tag) for prev_tag in self.tags]
+            for tag in self.tags
+        ]
         print("the total number of features is %d" % (len(self.features)))
 
-    def dot(self, feature, averaged=False):
-        score = 0
-        for f in feature:
-            if f in self.features:
-                if averaged == True:
-                    score += self.v[self.features[f]]
-                else:
-                    score += self.weights[self.features[f]]
-        return score
-
-    def score(self, sentence, position, pre_tag, cur_tag, averaged=False):
-        feature = self.create_feature_template(sentence, position, pre_tag, cur_tag)
-        return self.dot(feature, averaged)
+    def score(self, feature, averaged=False):
+        if averaged:
+            score = [self.v[self.features[f]] for f in feature if f in self.features]
+        else:
+            score = [self.weights[self.features[f]] for f in feature if f in self.features]
+        return sum(score)
 
     def predict(self, sentence, averaged=False):
-        states = len(sentence)
-        type = len(self.tag2id)
+        T = len(sentence)
+        delta = np.zeros((T, len(self.tags)))
+        paths = np.zeros((T, len(self.tags)), dtype='int')
+        bigram_scores = np.array([
+            [self.score(bifv, averaged) for bifv in bifvs]
+            for bifvs in self.bigram_features
+        ])
 
-        max_score = np.zeros((states, type))
-        paths = np.zeros((states, type))
+        fvs = [self.create_feature_template(sentence, 0, self.BOS, tag)
+               for tag in self.tags]
+        delta[0] = [self.score(fv, averaged) for fv in fvs]
 
-        for j in range(type):
-            max_score[0][j] = self.score(sentence, 0, '^', self.id2tag[j], averaged)
-            paths[0][j] = -1
+        for i in range(1, T):
+            unigram_scores = np.array([
+                self.score(self.create_unigram_feature(sentence, i, tag), averaged)
+                for tag in self.tags
+            ])
+            scores = bigram_scores + unigram_scores[:, None] + delta[i - 1]
+            paths[i] = np.argmax(scores, axis=1)
+            delta[i] = scores[np.arange(len(self.tags)), paths[i]]
+        prev = np.argmax(delta[-1])
 
-        # 动态规划
-        for i in range(1, states):
-            for j in range(type):
-                last_path = -1
-                cur_score = [self.score(sentence, i, self.id2tag[k], self.id2tag[j], averaged) for k in range(type)]
-                max_score[i][j] = max(cur_score + max_score[i - 1])
-                paths[i][j] = np.argmax(cur_score + max_score[i - 1])
-
-        gold_path = []
-        cur_state = states - 1
-        step = np.argmax(max_score[cur_state])
-        gold_path.insert(0, self.id2tag[step])
-        while True:
-            step = int(paths[cur_state][step])
-            if step == -1:
-                break
-            gold_path.insert(0, self.id2tag[step])
-            cur_state -= 1
-        return gold_path
+        predict = [prev]
+        for i in reversed(range(1, T)):
+            prev = paths[i, prev]
+            predict.append(prev)
+        return [self.tags[i] for i in reversed(predict)]
 
     def evaluate(self, data, averaged=False):
         total_num = 0
@@ -182,11 +186,12 @@ class global_liner_model(object):
                 if tags[j] == predict[j]:
                     correct_num += 1
 
-        return (correct_num, total_num, correct_num / total_num)
+        return correct_num, total_num, correct_num / total_num
 
-    def online_train(self, iteration=20, averaged=False, shuffle=False, exitor=20):
+    def online_train(self, iteration=20, averaged=False, shuffle=False, exitor=10):
         max_dev_precision = 0
         counter = 0
+        update_time = 0
         if averaged:
             print('using V to predict dev data')
         for iter in range(iteration):
@@ -200,10 +205,11 @@ class global_liner_model(object):
                 tags = self.train_data.tags[i]
                 predict = self.predict(sentence, averaged=False)
                 if predict != tags:
+                    update_time += 1
                     for j in range(len(tags)):
                         if j == 0:
-                            gold_pre_tag = '^'
-                            predict_pre_tag = '^'
+                            gold_pre_tag = self.BOS
+                            predict_pre_tag = self.BOS
                         else:
                             gold_pre_tag = tags[j - 1]
                             predict_pre_tag = predict[j - 1]
@@ -211,11 +217,26 @@ class global_liner_model(object):
                         predict_feature = self.create_feature_template(sentence, j, predict_pre_tag, predict[j])
                         for f in gold_feature:
                             if f in self.features:
+                                findex = self.features[f]
+                                last_w_value = self.weights[findex]
                                 self.weights[self.features[f]] += 1
+                                self.update_v(findex, update_time, last_w_value)
+
                         for f in predict_feature:
                             if f in self.features:
+                                findex = self.features[f]
+                                last_w_value = self.weights[findex]
                                 self.weights[self.features[f]] -= 1
-                    self.v += self.weights
+                                self.update_v(findex, update_time, last_w_value)
+                    # 本次迭代完成
+                    current_update_times = update_time  # 本次更新所在的次数
+                    for i in range(len(self.v)):
+                        last_w_value = self.weights[i]
+                        last_update_times = self.update_times[i]  # 上一次更新所在的次数
+                        if (current_update_times != last_update_times):
+                            self.update_times[i] = current_update_times
+                            self.v[i] += (current_update_times - last_update_times - 1) * last_w_value + \
+                                         self.weights[i]
             train_correct_num, total_num, train_precision = self.evaluate(self.train_data, averaged=False)
             print('\t' + 'train准确率：%d / %d = %f' % (train_correct_num, total_num, train_precision), flush=True)
             dev_correct_num, dev_num, dev_precision = self.evaluate(self.dev_data, averaged)
@@ -231,7 +252,6 @@ class global_liner_model(object):
                 counter = 0
             else:
                 counter += 1
-                # self.save('./result.txt')
 
             endtime = datetime.datetime.now()
             print("\titeration executing time is " + str((endtime - starttime)) + " s")
@@ -241,6 +261,12 @@ class global_liner_model(object):
             if counter >= exitor:
                 break
         print('iterator = %d , max_dev_precision = %f' % (max_iterator, max_dev_precision), flush=True)
+
+    def update_v(self, findex, update_time, last_w_value):
+        last_update_time = self.update_times[findex]  # 上一次更新所在的次数
+        current_update_time = update_time  # 本次更新所在的次数
+        self.update_times[findex] = update_time
+        self.v[findex] += (current_update_time - last_update_time - 1) * last_w_value + self.weights[findex]
 
 
 if __name__ == '__main__':
