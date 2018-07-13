@@ -54,6 +54,7 @@ class LinearModel(object):
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
+
         # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = datetime.now()
@@ -83,7 +84,7 @@ class LinearModel(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %s" % (total_time / epoch))
+        print("mean time of each epoch is %ss" % (total_time / epoch))
 
     def update(self, batch):
         wordseq, tagseq = batch

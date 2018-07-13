@@ -51,6 +51,7 @@ lm.create_feature_space(train)
 print("The size of the feature space is %d" % lm.d)
 
 print("Using online-training algorithm to train the model")
+print("\tepochs: %d\n\tinterval: %d" % (config.epochs, config.interval))
 lm.online(train, dev, config.lmpkl,
           epochs=config.epochs,
           interval=config.interval,
