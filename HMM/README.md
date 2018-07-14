@@ -25,8 +25,8 @@
         'alpha': 0.3                               #平滑参数
     }
     
-    $ cd ./HMM
-    $ python src/HMM.py			#修改config.py中的参数
+    $ cd ./src
+    $ python HMM.py			#修改config.py中的参数
 ### 3.参考结果
 #### (1)小数据测试
 
