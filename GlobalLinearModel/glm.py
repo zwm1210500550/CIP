@@ -53,6 +53,7 @@ class GlobalLinearModel(object):
         self.W = np.zeros(self.d)
         # 累加特征权重
         self.V = np.zeros(self.d)
+        # Bigram特征
         self.BF = [
             [self.bigram(prev_tag, tag) for prev_tag in self.tags]
             for tag in self.tags
@@ -93,7 +94,7 @@ class GlobalLinearModel(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %s" % (total_time / epoch))
+        print("mean time of each epoch is %ss" % (total_time / epoch))
 
     def update(self, batch):
         wordseq, tagseq = batch

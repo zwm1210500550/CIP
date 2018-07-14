@@ -1,291 +1,295 @@
 Creating Global Linear Model with 31 tags
+	use feature extracion optimization
 Using 803 sentences to create the feature space
 The size of the feature space is 67391
 Using online-training algorithm to train the model
 Epoch 0 / 100:
 	train: 18712 / 20454 = 0.914833
 	dev: 41048 / 50319 = 0.815755
-	59.285926s elapsed
+	0:00:07.734838s elapsed
 Epoch 1 / 100:
 	train: 19553 / 20454 = 0.955950
 	dev: 41882 / 50319 = 0.832330
-	56.843930s elapsed
+	0:00:07.144560s elapsed
 Epoch 2 / 100:
 	train: 20060 / 20454 = 0.980737
 	dev: 43096 / 50319 = 0.856456
-	55.633133s elapsed
+	0:00:06.721815s elapsed
 Epoch 3 / 100:
 	train: 20276 / 20454 = 0.991298
 	dev: 43681 / 50319 = 0.868082
-	56.258718s elapsed
+	0:00:06.164720s elapsed
 Epoch 4 / 100:
 	train: 20271 / 20454 = 0.991053
 	dev: 43425 / 50319 = 0.862994
-	56.040878s elapsed
+	0:00:05.917256s elapsed
 Epoch 5 / 100:
 	train: 20248 / 20454 = 0.989929
 	dev: 43487 / 50319 = 0.864226
-	55.681354s elapsed
+	0:00:05.770077s elapsed
 Epoch 6 / 100:
 	train: 20360 / 20454 = 0.995404
 	dev: 43703 / 50319 = 0.868519
-	55.995544s elapsed
+	0:00:05.592772s elapsed
 Epoch 7 / 100:
 	train: 20341 / 20454 = 0.994475
 	dev: 43726 / 50319 = 0.868976
-	55.694545s elapsed
+	0:00:05.722032s elapsed
 Epoch 8 / 100:
 	train: 20366 / 20454 = 0.995698
 	dev: 43718 / 50319 = 0.868817
-	56.446822s elapsed
+	0:00:05.606732s elapsed
 Epoch 9 / 100:
 	train: 20407 / 20454 = 0.997702
 	dev: 43798 / 50319 = 0.870407
-	55.006446s elapsed
+	0:00:05.411933s elapsed
 Epoch 10 / 100:
 	train: 20441 / 20454 = 0.999364
 	dev: 43905 / 50319 = 0.872533
-	54.909623s elapsed
+	0:00:05.504997s elapsed
 Epoch 11 / 100:
 	train: 20426 / 20454 = 0.998631
 	dev: 43790 / 50319 = 0.870248
-	55.605758s elapsed
+	0:00:05.322673s elapsed
 Epoch 12 / 100:
 	train: 20434 / 20454 = 0.999022
 	dev: 43784 / 50319 = 0.870129
-	54.869087s elapsed
+	0:00:05.136335s elapsed
 Epoch 13 / 100:
 	train: 20427 / 20454 = 0.998680
 	dev: 43726 / 50319 = 0.868976
-	54.968406s elapsed
+	0:00:05.321930s elapsed
 Epoch 14 / 100:
 	train: 20436 / 20454 = 0.999120
 	dev: 43937 / 50319 = 0.873169
-	55.177268s elapsed
+	0:00:05.149448s elapsed
 Epoch 15 / 100:
 	train: 20451 / 20454 = 0.999853
 	dev: 43862 / 50319 = 0.871679
-	55.153612s elapsed
+	0:00:05.541652s elapsed
 Epoch 16 / 100:
 	train: 20450 / 20454 = 0.999804
 	dev: 43844 / 50319 = 0.871321
-	55.096362s elapsed
+	0:00:05.084457s elapsed
 Epoch 17 / 100:
 	train: 20440 / 20454 = 0.999316
 	dev: 43695 / 50319 = 0.868360
-	55.091148s elapsed
+	0:00:05.104655s elapsed
 Epoch 18 / 100:
 	train: 20441 / 20454 = 0.999364
 	dev: 43803 / 50319 = 0.870506
-	55.039523s elapsed
+	0:00:05.077697s elapsed
 Epoch 19 / 100:
 	train: 20430 / 20454 = 0.998827
 	dev: 43749 / 50319 = 0.869433
-	55.571505s elapsed
+	0:00:05.336702s elapsed
 Epoch 20 / 100:
 	train: 20448 / 20454 = 0.999707
 	dev: 43891 / 50319 = 0.872255
-	55.141539s elapsed
+	0:00:05.515506s elapsed
 max precision of dev is 0.873169 at epoch 14
-1170.845839s elapsed
+mean time of each epoch is 0:00:05.994139s
+0:02:01.230827s elapsed
 
 Creating Global Linear Model with 35 tags
+	use feature extracion optimization
 Using 46572 sentences to create the feature space
 The size of the feature space is 1400228
 Using online-training algorithm to train the model
 Epoch 0 / 100:
 	train: 978113 / 1057943 = 0.924542
 	dev: 53837 / 59955 = 0.897957
-	1727.271740s elapsed
+	0:04:40.414328s elapsed
 Epoch 1 / 100:
 	train: 998652 / 1057943 = 0.943956
 	dev: 54591 / 59955 = 0.910533
-	1700.166772s elapsed
+	0:04:41.746005s elapsed
 Epoch 2 / 100:
 	train: 1006852 / 1057943 = 0.951707
 	dev: 54851 / 59955 = 0.914869
-	1691.373454s elapsed
+	0:04:08.473313s elapsed
 Epoch 3 / 100:
 	train: 1012676 / 1057943 = 0.957212
 	dev: 55100 / 59955 = 0.919023
-	1678.730739s elapsed
+	0:04:11.897159s elapsed
 Epoch 4 / 100:
 	train: 1018116 / 1057943 = 0.962354
 	dev: 55156 / 59955 = 0.919957
-	1683.418529s elapsed
+	0:03:54.642765s elapsed
 Epoch 5 / 100:
 	train: 1018529 / 1057943 = 0.962745
 	dev: 55079 / 59955 = 0.918672
-	1656.162337s elapsed
+	0:03:54.627378s elapsed
 Epoch 6 / 100:
 	train: 1026167 / 1057943 = 0.969964
 	dev: 55404 / 59955 = 0.924093
-	1658.189992s elapsed
+	0:03:47.281595s elapsed
 Epoch 7 / 100:
 	train: 1026038 / 1057943 = 0.969842
 	dev: 55430 / 59955 = 0.924527
-	1669.736712s elapsed
+	0:03:42.301660s elapsed
 Epoch 8 / 100:
 	train: 1028080 / 1057943 = 0.971773
 	dev: 55399 / 59955 = 0.924010
-	1647.235037s elapsed
+	0:03:36.489653s elapsed
 Epoch 9 / 100:
 	train: 1030136 / 1057943 = 0.973716
 	dev: 55513 / 59955 = 0.925911
-	1648.802126s elapsed
+	0:03:33.147472s elapsed
 Epoch 10 / 100:
 	train: 1028310 / 1057943 = 0.971990
 	dev: 55555 / 59955 = 0.926612
-	1691.516703s elapsed
+	0:03:33.768613s elapsed
 Epoch 11 / 100:
 	train: 1032152 / 1057943 = 0.975622
 	dev: 55530 / 59955 = 0.926195
-	1679.275696s elapsed
+	0:03:29.969915s elapsed
 Epoch 12 / 100:
 	train: 1032038 / 1057943 = 0.975514
 	dev: 55446 / 59955 = 0.924794
-	1647.500596s elapsed
+	0:03:23.868376s elapsed
 Epoch 13 / 100:
 	train: 1033852 / 1057943 = 0.977228
 	dev: 55623 / 59955 = 0.927746
-	1646.658777s elapsed
+	0:03:22.478753s elapsed
 Epoch 14 / 100:
 	train: 1032878 / 1057943 = 0.976308
 	dev: 55552 / 59955 = 0.926562
-	1651.618343s elapsed
+	0:03:18.048700s elapsed
 Epoch 15 / 100:
 	train: 1033749 / 1057943 = 0.977131
 	dev: 55587 / 59955 = 0.927145
-	1659.595147s elapsed
+	0:03:25.819402s elapsed
 Epoch 16 / 100:
 	train: 1035831 / 1057943 = 0.979099
 	dev: 55728 / 59955 = 0.929497
-	1652.093658s elapsed
+	0:03:49.382062s elapsed
 Epoch 17 / 100:
 	train: 1035639 / 1057943 = 0.978918
 	dev: 55762 / 59955 = 0.930064
-	1648.581582s elapsed
+	0:03:37.296482s elapsed
 Epoch 18 / 100:
 	train: 1036610 / 1057943 = 0.979835
 	dev: 55783 / 59955 = 0.930414
-	1644.959297s elapsed
+	0:03:33.636671s elapsed
 Epoch 19 / 100:
 	train: 1035863 / 1057943 = 0.979129
 	dev: 55789 / 59955 = 0.930515
-	1643.232879s elapsed
+	0:03:40.085625s elapsed
 Epoch 20 / 100:
 	train: 1037594 / 1057943 = 0.980766
 	dev: 55774 / 59955 = 0.930264
-	1627.696367s elapsed
+	0:03:38.484377s elapsed
 Epoch 21 / 100:
 	train: 1037675 / 1057943 = 0.980842
 	dev: 55763 / 59955 = 0.930081
-	1615.657564s elapsed
+	0:03:38.963934s elapsed
 Epoch 22 / 100:
 	train: 1037957 / 1057943 = 0.981109
 	dev: 55637 / 59955 = 0.927979
-	1625.765708s elapsed
+	0:03:35.530319s elapsed
 Epoch 23 / 100:
 	train: 1039096 / 1057943 = 0.982185
 	dev: 55769 / 59955 = 0.930181
-	1622.673415s elapsed
+	0:03:36.479555s elapsed
 Epoch 24 / 100:
 	train: 1039089 / 1057943 = 0.982179
 	dev: 55853 / 59955 = 0.931582
-	1624.675005s elapsed
+	0:03:17.178185s elapsed
 Epoch 25 / 100:
 	train: 1038971 / 1057943 = 0.982067
 	dev: 55846 / 59955 = 0.931465
-	1625.031506s elapsed
+	0:03:08.922781s elapsed
 Epoch 26 / 100:
 	train: 1039353 / 1057943 = 0.982428
 	dev: 55868 / 59955 = 0.931832
-	1623.316654s elapsed
+	0:03:03.293495s elapsed
 Epoch 27 / 100:
 	train: 1039447 / 1057943 = 0.982517
 	dev: 55863 / 59955 = 0.931749
-	1612.178251s elapsed
+	0:03:16.817716s elapsed
 Epoch 28 / 100:
 	train: 1038162 / 1057943 = 0.981302
 	dev: 55665 / 59955 = 0.928446
-	1592.416498s elapsed
+	0:03:16.424478s elapsed
 Epoch 29 / 100:
 	train: 1039086 / 1057943 = 0.982176
 	dev: 55765 / 59955 = 0.930114
-	1590.322802s elapsed
+	0:03:11.294197s elapsed
 Epoch 30 / 100:
 	train: 1038598 / 1057943 = 0.981715
 	dev: 55741 / 59955 = 0.929714
-	1592.965119s elapsed
+	0:03:08.385147s elapsed
 Epoch 31 / 100:
 	train: 1038874 / 1057943 = 0.981975
 	dev: 55839 / 59955 = 0.931349
-	1595.725362s elapsed
+	0:03:13.436706s elapsed
 Epoch 32 / 100:
 	train: 1039708 / 1057943 = 0.982764
 	dev: 55805 / 59955 = 0.930781
-	1590.363162s elapsed
+	0:03:07.643686s elapsed
 Epoch 33 / 100:
 	train: 1040396 / 1057943 = 0.983414
 	dev: 55821 / 59955 = 0.931048
-	1591.430259s elapsed
+	0:03:11.019121s elapsed
 Epoch 34 / 100:
 	train: 1039013 / 1057943 = 0.982107
 	dev: 55784 / 59955 = 0.930431
-	1575.312285s elapsed
+	0:03:20.716575s elapsed
 Epoch 35 / 100:
 	train: 1039829 / 1057943 = 0.982878
 	dev: 55820 / 59955 = 0.931032
-	1572.079944s elapsed
+	0:03:06.050307s elapsed
 Epoch 36 / 100:
 	train: 1040745 / 1057943 = 0.983744
 	dev: 55907 / 59955 = 0.932483
-	1576.877253s elapsed
+	0:03:15.186076s elapsed
 Epoch 37 / 100:
 	train: 1039900 / 1057943 = 0.982945
 	dev: 55735 / 59955 = 0.929614
-	1568.137067s elapsed
+	0:03:04.564902s elapsed
 Epoch 38 / 100:
 	train: 1039303 / 1057943 = 0.982381
 	dev: 55749 / 59955 = 0.929847
-	1568.311888s elapsed
+	0:03:08.889216s elapsed
 Epoch 39 / 100:
 	train: 1039911 / 1057943 = 0.982956
 	dev: 55747 / 59955 = 0.929814
-	1567.109127s elapsed
+	0:03:05.619908s elapsed
 Epoch 40 / 100:
 	train: 1040769 / 1057943 = 0.983767
 	dev: 55834 / 59955 = 0.931265
-	1582.633023s elapsed
+	0:03:06.480673s elapsed
 Epoch 41 / 100:
 	train: 1040093 / 1057943 = 0.983128
 	dev: 55822 / 59955 = 0.931065
-	1585.938307s elapsed
+	0:03:07.135055s elapsed
 Epoch 42 / 100:
 	train: 1039820 / 1057943 = 0.982870
 	dev: 55892 / 59955 = 0.932233
-	1585.714966s elapsed
+	0:03:09.272205s elapsed
 Epoch 43 / 100:
 	train: 1039338 / 1057943 = 0.982414
 	dev: 55806 / 59955 = 0.930798
-	1585.777359s elapsed
+	0:03:05.196223s elapsed
 Epoch 44 / 100:
 	train: 1041816 / 1057943 = 0.984756
 	dev: 55801 / 59955 = 0.930715
-	1583.362224s elapsed
+	0:03:06.006484s elapsed
 Epoch 45 / 100:
 	train: 1041062 / 1057943 = 0.984044
 	dev: 55791 / 59955 = 0.930548
-	1583.876318s elapsed
+	0:03:07.132044s elapsed
 Epoch 46 / 100:
 	train: 1040680 / 1057943 = 0.983682
 	dev: 55854 / 59955 = 0.931599
-	1583.297354s elapsed
+	0:03:02.832105s elapsed
 Epoch 47 / 100:
 	train: 1040656 / 1057943 = 0.983660
 	dev: 55829 / 59955 = 0.931182
-	1586.078516s elapsed
+	0:03:07.785844s elapsed
 max precision of dev is 0.932483 at epoch 36
+mean time of each epoch is 0:03:31.534409s
 Precision of test: 75843 / 81578 = 0.929699
-78205.660869s elapsed
+2:47:20.839508s elapsed
 

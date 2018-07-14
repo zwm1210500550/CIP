@@ -1,203 +1,213 @@
 Creating Global Linear Model with 31 tags
+	use feature extracion optimization
+	use average perceptron
 Using 803 sentences to create the feature space
 The size of the feature space is 67391
 Using online-training algorithm to train the model
+	epochs: 100
+	interval: 5
 Epoch 0 / 100:
 	train: 19067 / 20454 = 0.932189
 	dev: 42562 / 50319 = 0.845844
-	57.078503s elapsed
+	0:00:07.785495s elapsed
 Epoch 1 / 100:
 	train: 19892 / 20454 = 0.972524
 	dev: 43678 / 50319 = 0.868022
-	57.152397s elapsed
+	0:00:06.696495s elapsed
 Epoch 2 / 100:
 	train: 20155 / 20454 = 0.985382
 	dev: 43963 / 50319 = 0.873686
-	56.671174s elapsed
+	0:00:06.537166s elapsed
 Epoch 3 / 100:
 	train: 20264 / 20454 = 0.990711
 	dev: 44089 / 50319 = 0.876190
-	56.576393s elapsed
+	0:00:05.858201s elapsed
 Epoch 4 / 100:
 	train: 20311 / 20454 = 0.993009
 	dev: 44150 / 50319 = 0.877402
-	55.601481s elapsed
+	0:00:05.566149s elapsed
 Epoch 5 / 100:
 	train: 20338 / 20454 = 0.994329
 	dev: 44184 / 50319 = 0.878078
-	56.148096s elapsed
+	0:00:05.408162s elapsed
 Epoch 6 / 100:
 	train: 20363 / 20454 = 0.995551
 	dev: 44232 / 50319 = 0.879032
-	55.765804s elapsed
+	0:00:05.193731s elapsed
 Epoch 7 / 100:
 	train: 20372 / 20454 = 0.995991
 	dev: 44251 / 50319 = 0.879409
-	55.127184s elapsed
+	0:00:05.288997s elapsed
 Epoch 8 / 100:
 	train: 20383 / 20454 = 0.996529
 	dev: 44289 / 50319 = 0.880165
-	55.871797s elapsed
+	0:00:05.359939s elapsed
 Epoch 9 / 100:
 	train: 20387 / 20454 = 0.996724
 	dev: 44294 / 50319 = 0.880264
-	54.818978s elapsed
+	0:00:04.985443s elapsed
 Epoch 10 / 100:
 	train: 20392 / 20454 = 0.996969
 	dev: 44299 / 50319 = 0.880363
-	57.075227s elapsed
+	0:00:05.044692s elapsed
 Epoch 11 / 100:
 	train: 20392 / 20454 = 0.996969
 	dev: 44297 / 50319 = 0.880324
-	55.934396s elapsed
+	0:00:05.464267s elapsed
 Epoch 12 / 100:
 	train: 20392 / 20454 = 0.996969
 	dev: 44305 / 50319 = 0.880483
-	54.908578s elapsed
+	0:00:04.879597s elapsed
 Epoch 13 / 100:
 	train: 20393 / 20454 = 0.997018
 	dev: 44302 / 50319 = 0.880423
-	55.370700s elapsed
+	0:00:04.745409s elapsed
 Epoch 14 / 100:
 	train: 20393 / 20454 = 0.997018
 	dev: 44311 / 50319 = 0.880602
-	55.171216s elapsed
+	0:00:05.012465s elapsed
 Epoch 15 / 100:
 	train: 20393 / 20454 = 0.997018
 	dev: 44310 / 50319 = 0.880582
-	55.359038s elapsed
+	0:00:04.824873s elapsed
 Epoch 16 / 100:
 	train: 20393 / 20454 = 0.997018
 	dev: 44314 / 50319 = 0.880661
-	55.403436s elapsed
+	0:00:04.720791s elapsed
 Epoch 17 / 100:
 	train: 20394 / 20454 = 0.997067
 	dev: 44311 / 50319 = 0.880602
-	55.413858s elapsed
+	0:00:04.937642s elapsed
 Epoch 18 / 100:
 	train: 20394 / 20454 = 0.997067
 	dev: 44311 / 50319 = 0.880602
-	55.256885s elapsed
+	0:00:04.794769s elapsed
 Epoch 19 / 100:
 	train: 20396 / 20454 = 0.997164
 	dev: 44313 / 50319 = 0.880642
-	54.897052s elapsed
+	0:00:04.701802s elapsed
 Epoch 20 / 100:
 	train: 20396 / 20454 = 0.997164
 	dev: 44318 / 50319 = 0.880741
-	54.929212s elapsed
+	0:00:04.691040s elapsed
 Epoch 21 / 100:
 	train: 20396 / 20454 = 0.997164
 	dev: 44317 / 50319 = 0.880721
-	54.844199s elapsed
+	0:00:04.634121s elapsed
 Epoch 22 / 100:
 	train: 20396 / 20454 = 0.997164
 	dev: 44317 / 50319 = 0.880721
-	54.801065s elapsed
+	0:00:04.623588s elapsed
 Epoch 23 / 100:
 	train: 20396 / 20454 = 0.997164
 	dev: 44317 / 50319 = 0.880721
-	54.818154s elapsed
+	0:00:04.620926s elapsed
 Epoch 24 / 100:
 	train: 20396 / 20454 = 0.997164
 	dev: 44317 / 50319 = 0.880721
-	54.871197s elapsed
+	0:00:04.769948s elapsed
 Epoch 25 / 100:
 	train: 20396 / 20454 = 0.997164
 	dev: 44317 / 50319 = 0.880721
-	54.956565s elapsed
+	0:00:04.686847s elapsed
 Epoch 26 / 100:
 	train: 20396 / 20454 = 0.997164
 	dev: 44317 / 50319 = 0.880721
-	54.938453s elapsed
+	0:00:04.676735s elapsed
 max precision of dev is 0.880741 at epoch 20
-1501.862312s elapsed
+mean time of each epoch is 0:00:05.404203s
+0:02:22.748738s elapsed
 
 Creating Global Linear Model with 35 tags
+	use feature extracion optimization
+	use average perceptron
 Using 46572 sentences to create the feature space
 The size of the feature space is 1400228
 Using online-training algorithm to train the model
+	epochs: 100
+	interval: 10
 Epoch 0 / 100:
 	train: 1000482 / 1057943 = 0.945686
 	dev: 55827 / 59955 = 0.931148
-	1773.717977s elapsed
+	0:04:34.923050s elapsed
 Epoch 1 / 100:
 	train: 1015319 / 1057943 = 0.959710
 	dev: 56135 / 59955 = 0.936286
-	1722.469413s elapsed
+	0:04:04.843735s elapsed
 Epoch 2 / 100:
 	train: 1021811 / 1057943 = 0.965847
 	dev: 56309 / 59955 = 0.939188
-	1717.194341s elapsed
+	0:03:56.155109s elapsed
 Epoch 3 / 100:
 	train: 1025939 / 1057943 = 0.969749
 	dev: 56350 / 59955 = 0.939872
-	1705.340737s elapsed
+	0:04:13.611862s elapsed
 Epoch 4 / 100:
 	train: 1028814 / 1057943 = 0.972466
 	dev: 56380 / 59955 = 0.940372
-	1691.731364s elapsed
+	0:03:43.123479s elapsed
 Epoch 5 / 100:
 	train: 1031255 / 1057943 = 0.974774
 	dev: 56406 / 59955 = 0.940806
-	1693.586827s elapsed
+	0:03:30.111876s elapsed
 Epoch 6 / 100:
 	train: 1032897 / 1057943 = 0.976326
 	dev: 56398 / 59955 = 0.940672
-	1723.036509s elapsed
+	0:03:26.602796s elapsed
 Epoch 7 / 100:
 	train: 1034211 / 1057943 = 0.977568
 	dev: 56399 / 59955 = 0.940689
-	1682.531384s elapsed
+	0:03:24.404867s elapsed
 Epoch 8 / 100:
 	train: 1035405 / 1057943 = 0.978696
 	dev: 56410 / 59955 = 0.940872
-	1666.971610s elapsed
+	0:03:15.551853s elapsed
 Epoch 9 / 100:
 	train: 1036446 / 1057943 = 0.979680
 	dev: 56408 / 59955 = 0.940839
-	1686.961542s elapsed
+	0:03:12.464916s elapsed
 Epoch 10 / 100:
 	train: 1037320 / 1057943 = 0.980507
 	dev: 56403 / 59955 = 0.940756
-	1674.943274s elapsed
+	0:03:12.967791s elapsed
 Epoch 11 / 100:
 	train: 1038079 / 1057943 = 0.981224
 	dev: 56404 / 59955 = 0.940772
-	1671.785414s elapsed
+	0:03:10.005935s elapsed
 Epoch 12 / 100:
 	train: 1038704 / 1057943 = 0.981815
 	dev: 56397 / 59955 = 0.940655
-	1681.367128s elapsed
+	0:03:07.153894s elapsed
 Epoch 13 / 100:
 	train: 1039285 / 1057943 = 0.982364
 	dev: 56400 / 59955 = 0.940706
-	1681.908209s elapsed
+	0:03:12.671198s elapsed
 Epoch 14 / 100:
 	train: 1039793 / 1057943 = 0.982844
 	dev: 56402 / 59955 = 0.940739
-	1691.293673s elapsed
+	0:03:07.525221s elapsed
 Epoch 15 / 100:
 	train: 1040362 / 1057943 = 0.983382
 	dev: 56397 / 59955 = 0.940655
-	1687.010037s elapsed
+	0:03:05.255294s elapsed
 Epoch 16 / 100:
 	train: 1040788 / 1057943 = 0.983785
 	dev: 56399 / 59955 = 0.940689
-	1684.714069s elapsed
+	0:03:03.157322s elapsed
 Epoch 17 / 100:
 	train: 1041186 / 1057943 = 0.984161
 	dev: 56399 / 59955 = 0.940689
-	1668.137481s elapsed
+	0:02:59.302348s elapsed
 Epoch 18 / 100:
 	train: 1041536 / 1057943 = 0.984492
 	dev: 56405 / 59955 = 0.940789
-	1667.409830s elapsed
+	0:02:58.913727s elapsed
 Epoch 19 / 100:
 	train: 1041848 / 1057943 = 0.984787
 	dev: 56405 / 59955 = 0.940789
-	1663.366702s elapsed
+	0:02:56.781062s elapsed
 max precision of dev is 0.940872 at epoch 8
-Precision of test: 75139 / 81578 = 0.921069
-34005.065474s elapsed
+mean time of each epoch is 0:03:35.554070s
+Precision of test: 76574 / 81578 = 0.938660
+1:09:04.142883s elapsed
 
