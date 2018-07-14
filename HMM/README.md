@@ -1,8 +1,65 @@
-隐马尔可夫模型
-====
-﻿* 参考结果：
+#一阶隐马尔可夫模型HMM
+##一、目录文件
+    ./data/:
+        train.conll: 训练集
+        dev.conll: 开发集
+    ./big_data/
+        train.conll: 训练集
+        dev.conll: 开发集
+        test.conll: 测试集
+    ./src:
+        config.py: 配置文件
+        HMM.py: 一阶隐马尔可夫模型的代码
+    ./HMM-v2.pptx：参考ppt
+    ./README.md: 使用说明
 
-共1910个句子<br>
-共50319个单词，预测正确38190个单词<br>
-准确率：0.758958<br>
-用时：0:00:22.536622<br>
+##二、运行
+###1.运行环境
+    python 3
+###2.运行方法
+    #配置文件中各个参数
+    config = {
+        'train_data_file': '../data/train.conll', #训练集文件,大数据改为'../big-data/train.conll'
+        'test_data_file': '../data/dev.conll',    #测试集文件,大数据改为'../big-data/test.conll'
+                                                  #或者'../big-data/dev.conll'
+        'alpha': 0.3                               #平滑参数
+    }
+    
+    $ cd ./HMM
+    $ python src/HMM.py			#修改config.py中的参数
+###3.参考结果
+####(1)小数据测试
+
+注：可以修改不同的alpha比较准确率。训练集数据少结果可能不稳定。
+
+```
+训练集：data/train.conll
+开发集：data/dev.conll
+```
+
+|   属性    |        值         |
+| :-----: | :--------------: |
+|   训练集   | data/train.conll |
+|   测试集   |  data/dev.conll  |
+| 参数alpha |       0.3        |
+|   准确率   |      75.74%      |
+|  执行时间   |      0：0：16      |
+
+
+
+#### (2)大数据测试
+
+```
+训练集：big_data/train.conll
+开发集：big_data/dev.conll
+测试集：big_data/test.conll
+```
+
+|   属性    |          值1          |          值2          |
+| :-----: | :------------------: | :------------------: |
+|   训练集   | big_data/train.conll | big_data/train.conll |
+|   测试集   |  big_data/dev.conll  | big_data/test.conll  |
+| 参数alpha |         0.01         |         0.01         |
+|   准确率   |        88.35%        |        88.50%        |
+|  执行时间   |       0：01：37        |       0：02：19        |
+
