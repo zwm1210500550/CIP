@@ -35,7 +35,7 @@ class HMM(object):
         self.m = len(self.words)
         self.n = len(self.tags)
 
-    def train(self, sentences, alpha=0.01, file=None):
+    def train(self, sentences, file, alpha=0.01):
         trans_matrix = np.zeros((self.n + 1, self.n + 1))
         emit_matrix = np.zeros((self.m + 1, self.n))
 

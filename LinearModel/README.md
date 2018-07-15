@@ -41,6 +41,7 @@ optional arguments:
   --average, -a   use average perceptron
   --optimize, -o  use feature extracion optimization
   --shuffle, -s   shuffle the data at each epoch
+  --file FILE, -f FILE  set where to store the model
 ```
 
 ## 结果
@@ -52,7 +53,7 @@ optional arguments:
 |      ×       |    ×     |    ×     |  14/20   | 84.4790% |   *    | 0:00:22.074306 |
 |      ×       |    ×     |    √     |  12/18   | 84.8805% |   *    | 0:00:22.156235 |
 |      ×       |    √     |    ×     |  19/25   | 85.4528% |   *    | 0:00:23.334402 |
-|      ×       |    √     |    √     |  13/19   | 85.7569% |   *    | 0:00:24.303279 |
+|      ×       |    √     |    √     |  14/20   | 85.7569% |   *    | 0:00:24.303279 |
 |      √       |    ×     |    ×     |   8/14   | 85.4588% |   *    | 0:00:02.655276 |
 |      √       |    ×     |    √     |   8/14   | 85.7191% |   *    | 0:00:02.783747 |
 |      √       |    √     |    ×     |  13/19   | 85.7052% |   *    | 0:00:02.586268 |

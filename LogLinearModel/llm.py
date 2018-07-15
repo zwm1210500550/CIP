@@ -48,7 +48,7 @@ class LogLinearModel(object):
         self.W = np.zeros(self.d)
 
     def SGD(self, train, dev, file,
-            epochs, batch_size, interval, c, eta, decay,
+            epochs, batch_size, interval, eta, decay, c,
             anneal, regularize, shuffle):
         # 记录更新次数
         count = 0
@@ -60,6 +60,7 @@ class LogLinearModel(object):
         training_data = [(wordseq, i, tag)
                          for wordseq, tagseq in train
                          for i, tag in enumerate(tagseq)]
+        lent = len(training_data)
         # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = datetime.now()
@@ -71,15 +72,15 @@ class LogLinearModel(object):
                 c = 0
             # 按照指定大小对数据分割批次
             batches = [training_data[i:i + batch_size]
-                       for i in range(0, len(training_data), batch_size)]
-            length = len(batches)
+                       for i in range(0, lent, batch_size)]
+            lenb = len(batches)
             # 根据批次数据更新权重
             for batch in batches:
                 if not anneal:
-                    self.update(batch, c)
+                    self.update(batch, c, lent, eta)
                 # 设置学习速率的指数衰减
                 else:
-                    self.update(batch, c, eta * decay ** (count / length))
+                    self.update(batch, c, lent, eta * decay ** (count / lenb))
                 count += 1
 
             print("Epoch %d / %d: " % (epoch, epochs))
@@ -98,9 +99,9 @@ class LogLinearModel(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %s" % (total_time / epoch))
+        print("mean time of each epoch is %ss" % (total_time / epoch))
 
-    def update(self, batch, c, eta=1):
+    def update(self, batch, c, n, eta):
         gradients = defaultdict(float)
 
         for wordseq, i, tag in batch:
@@ -120,7 +121,7 @@ class LogLinearModel(object):
                     gradients[fi] -= p
 
         if c != 0:
-            self.W *= (1 - eta * c)
+            self.W *= (1 - eta * c / n)
         for k, v in gradients.items():
             self.W[k] += eta * v
 

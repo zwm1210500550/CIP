@@ -41,6 +41,7 @@ optional arguments:
   --average, -a   use average perceptron
   --optimize, -o  use feature extracion optimization
   --shuffle, -s   shuffle the data at each epoch
+  --file FILE, -f FILE  set where to store the model
 ```
 
 ## 结果

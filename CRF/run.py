@@ -21,6 +21,8 @@ parser.add_argument('--regularize', '-r', action='store_true', default=False,
                     dest='regularize', help='use L2 regularization')
 parser.add_argument('--shuffle', '-s', action='store_true', default=False,
                     dest='shuffle', help='shuffle the data at each epoch')
+parser.add_argument('--file', '-f', action='store', dest='file',
+                    help='set where to store the model')
 args = parser.parse_args()
 
 if args.optimize:
@@ -33,6 +35,7 @@ config = Config(args.bigdata)
 
 train = preprocess(config.ftrain)
 dev = preprocess(config.fdev)
+file = args.file if args.file else config.crfpkl
 
 wordseqs, tagseqs = zip(*train)
 tags = sorted(set(np.hstack(tagseqs)))
@@ -55,26 +58,26 @@ crf.create_feature_space(train)
 print("The size of the feature space is %d" % crf.d)
 
 print("Using SGD algorithm to train the model")
-print("\tepochs: %d\n\tbatch_size: %d\n\tinterval: %d" %
-      (config.epochs, config.batch_size,  config.interval))
+print("\tepochs: %d\n\tbatch_size: %d\n\tinterval: %d\t\n\teta: %f" %
+      (config.epochs, config.batch_size,  config.interval, config.eta))
 if args.anneal:
-    print("\teta: %f\n\tdacay: %f" % (config.eta, config.decay))
+    print("\tdacay: %f" % config.decay)
 if args.regularize:
     print("\tc: %f" % config.c)
-crf.SGD(train, dev, config.crfpkl,
+crf.SGD(train, dev, file,
         epochs=config.epochs,
         batch_size=config.batch_size,
         interval=config.interval,
-        c=config.c,
         eta=config.eta,
         decay=config.decay,
+        c=config.c,
         anneal=args.anneal,
         regularize=args.regularize,
         shuffle=args.shuffle)
 
 if args.bigdata:
     test = preprocess(config.ftest)
-    crf = CRF.load(config.crfpkl)
+    crf = CRF.load(file)
     print("Precision of test: %d / %d = %4f" % crf.evaluate(test))
 
 print("%ss elapsed\n" % (datetime.now() - start))

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pickle
+import random
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -30,8 +31,6 @@ class CRF(object):
         self.tags = tags
         # 句首词性
         self.BOS = 'BOS'
-        # 句尾词性
-        self.EOS = 'EOS'
         # 词性对应索引的字典
         self.tdict = {t: i for i, t in enumerate(tags)}
 
@@ -60,7 +59,7 @@ class CRF(object):
         self.BS = np.array([self.score(bifv) for bifv in self.BF])
 
     def SGD(self, train, dev, file,
-            epochs, batch_size, interval, c, eta, decay,
+            epochs, batch_size, interval, eta, decay, c,
             anneal, regularize, shuffle):
         # 记录更新次数
         count = 0
@@ -68,6 +67,7 @@ class CRF(object):
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
+        lent = len(train)
 
         # 迭代指定次数训练模型
         for epoch in range(epochs):
@@ -81,14 +81,14 @@ class CRF(object):
             # 按照指定大小对数据分割批次
             batches = [train[i:i + batch_size]
                        for i in range(0, len(train), batch_size)]
-            length = len(batches)
+            lenb = len(batches)
             # 根据批次数据更新权重
             for batch in batches:
                 if not anneal:
-                    self.update(batch, c)
+                    self.update(batch, c, lent, eta)
                 # 设置学习速率的指数衰减
                 else:
-                    self.update(batch, c, eta * decay ** (count / length))
+                    self.update(batch, c, lent, eta * decay ** (count / lenb))
                 count += 1
 
             print("Epoch %d / %d: " % (epoch, epochs))
@@ -107,9 +107,9 @@ class CRF(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %s" % (total_time / epoch))
+        print("mean time of each epoch is %ss" % (total_time / epoch))
 
-    def update(self, batch, c, eta=1):
+    def update(self, batch, c, n, eta):
         gradients = defaultdict(float)
 
         for wordseq, tagseq in batch:
@@ -145,7 +145,7 @@ class CRF(object):
                         gradients[fi] -= p
 
         if c != 0:
-            self.W *= (1 - eta * c)
+            self.W *= (1 - eta * c / n)
         for k, v in gradients.items():
             self.W[k] += eta * v
         self.BS = np.array([self.score(bifv) for bifv in self.BF])

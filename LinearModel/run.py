@@ -19,6 +19,8 @@ parser.add_argument('--optimize', '-o', action='store_true', default=False,
                     dest='optimize', help='use feature extracion optimization')
 parser.add_argument('--shuffle', '-s', action='store_true', default=False,
                     dest='shuffle', help='shuffle the data at each epoch')
+parser.add_argument('--file', '-f', action='store', dest='file',
+                    help='set where to store the model')
 args = parser.parse_args()
 
 if args.optimize:
@@ -31,6 +33,7 @@ config = Config(args.bigdata)
 
 train = preprocess(config.ftrain)
 dev = preprocess(config.fdev)
+file = args.file if args.file else config.lmpkl
 
 wordseqs, tagseqs = zip(*train)
 tags = sorted(set(np.hstack(tagseqs)))
@@ -52,7 +55,7 @@ print("The size of the feature space is %d" % lm.d)
 
 print("Using online-training algorithm to train the model")
 print("\tepochs: %d\n\tinterval: %d" % (config.epochs, config.interval))
-lm.online(train, dev, config.lmpkl,
+lm.online(train, dev, file,
           epochs=config.epochs,
           interval=config.interval,
           average=args.average,
@@ -60,7 +63,7 @@ lm.online(train, dev, config.lmpkl,
 
 if args.bigdata:
     test = preprocess(config.ftest)
-    lm = LinearModel.load(config.lmpkl)
+    lm = LinearModel.load(file)
     print("Precision of test: %d / %d = %4f" %
           lm.evaluate(test, average=args.average))
 
