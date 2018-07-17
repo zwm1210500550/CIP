@@ -1,5 +1,5 @@
-#一阶隐马尔可夫模型HMM
-##一、目录文件
+# 一阶隐马尔可夫模型HMM
+## 一、目录文件
     ./data/:
         train.conll: 训练集
         dev.conll: 开发集
@@ -13,10 +13,10 @@
     ./HMM-v2.pptx：参考ppt
     ./README.md: 使用说明
 
-##二、运行
-###1.运行环境
+## 二、运行
+### 1.运行环境
     python 3
-###2.运行方法
+### 2.运行方法
     #配置文件中各个参数
     config = {
         'train_data_file': '../data/train.conll', #训练集文件,大数据改为'../big-data/train.conll'
@@ -25,10 +25,10 @@
         'alpha': 0.3                               #平滑参数
     }
     
-    $ cd ./HMM
-    $ python src/HMM.py			#修改config.py中的参数
-###3.参考结果
-####(1)小数据测试
+    $ cd ./src
+    $ python3 HMM.py			#修改config.py中的参数
+### 3.参考结果
+#### (1)小数据测试
 
 注：可以修改不同的alpha比较准确率。训练集数据少结果可能不稳定。
 
