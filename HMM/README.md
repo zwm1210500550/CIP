@@ -26,7 +26,11 @@
     }
     
     $ cd ./src
+<<<<<<< HEAD
     $ python3 HMM.py			#修改config.py中的参数
+=======
+    $ python HMM.py			#修改config.py中的参数
+>>>>>>> 50e2fc32bcf935474f19bcc64d27bf9f2440fcae
 ### 3.参考结果
 #### (1)小数据测试
 
