@@ -1,4 +1,3 @@
-nohup: 忽略输入
 Creating Global Linear Model with 31 tags
 	shuffle the data at each epoch
 Using 803 sentences to create the feature space
@@ -83,7 +82,7 @@ Epoch 18 / 100:
 	dev: 43765 / 50319 = 0.869751
 	0:00:29.616999s elapsed
 max precision of dev is 0.870109 at epoch 12
-mean time of each epoch is 0:00:32.039230s
+mean time of each epoch is 0:00:30.352954s
 0:09:37.818918s elapsed
 
 Creating Global Linear Model with 35 tags
@@ -190,7 +189,7 @@ Epoch 23 / 100:
 	dev: 55697 / 59955 = 0.928980
 	0:15:41.942536s elapsed
 max precision of dev is 0.933700 at epoch 12
-mean time of each epoch is 0:16:36.585153s
+mean time of each epoch is 0:15:55.060772s
 Precision of test: 75981 / 81578 = 0.931391
 6:23:12.497565s elapsed
 

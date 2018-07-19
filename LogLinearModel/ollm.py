@@ -62,7 +62,7 @@ class LogLinearModel(object):
         training_data = [(wordseq, i, tag)
                          for wordseq, tagseq in train
                          for i, tag in enumerate(tagseq)]
-        lent = len(training_data)
+        nt = len(training_data)
         # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = datetime.now()
@@ -74,15 +74,15 @@ class LogLinearModel(object):
                 c = 0
             # 按照指定大小对数据分割批次
             batches = [training_data[i:i + batch_size]
-                       for i in range(0, lent, batch_size)]
-            lenb = len(batches)
+                       for i in range(0, nt, batch_size)]
+            nb = len(batches)
             # 根据批次数据更新权重
             for batch in batches:
                 if not anneal:
-                    self.update(batch, c, lent, eta)
+                    self.update(batch, c, nt, eta)
                 # 设置学习速率的指数衰减
                 else:
-                    self.update(batch, c, lent, eta * decay ** (count / lenb))
+                    self.update(batch, c, nt, eta * decay ** (count / nb))
                 count += 1
 
             print("Epoch %d / %d: " % (epoch, epochs))
@@ -101,7 +101,7 @@ class LogLinearModel(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %ss" % (total_time / epoch))
+        print("mean time of each epoch is %ss" % (total_time / (epoch + 1)))
 
     def update(self, batch, c, n, eta):
         gradients = defaultdict(float)

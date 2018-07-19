@@ -82,7 +82,7 @@ Epoch 18 / 100:
 	dev: 42669 / 50319 = 0.847970
 	0:00:21.257746s elapsed
 max precision of dev is 0.848805 at epoch 12
-mean time of each epoch is 0:00:22.156235s
+mean time of each epoch is 0:00:20.990117s
 0:06:39.549731s elapsed
 
 Creating Linear Model with 35 tags
@@ -261,7 +261,7 @@ Epoch 41 / 100:
 	dev: 55478 / 59955 = 0.925327
 	0:11:03.466486s elapsed
 max precision of dev is 0.929013 at epoch 30
-mean time of each epoch is 0:12:31.790339s
+mean time of each epoch is 0:12:13.890569s
 Precision of test: 75555 / 81578 = 0.926169
 8:35:08.137945s elapsed
 

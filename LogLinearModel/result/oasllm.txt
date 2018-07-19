@@ -1,4 +1,3 @@
-nohup: 忽略输入
 Creating Log Linear Model with 35 tags
 	use feature extracion optimization
 	use simulated annealing
@@ -8,103 +7,103 @@ The size of the feature space is 1400192
 Using SGD algorithm to train the model
 	epochs: 100
 	batch_size: 50
-	interval: 10	
+	interval: 10
 	eta: 0.200000
 	dacay: 0.960000
-Epoch 0 / 100: 
+Epoch 0 / 100:
 	train: 1003936 / 1057943 = 0.948951
 	dev: 55466 / 59955 = 0.925127
 	0:02:49.797025s elapsed
-Epoch 1 / 100: 
+Epoch 1 / 100:
 	train: 1011613 / 1057943 = 0.956207
 	dev: 55347 / 59955 = 0.923142
 	0:02:51.725270s elapsed
-Epoch 2 / 100: 
+Epoch 2 / 100:
 	train: 1033356 / 1057943 = 0.976760
 	dev: 56101 / 59955 = 0.935718
 	0:02:50.088516s elapsed
-Epoch 3 / 100: 
+Epoch 3 / 100:
 	train: 1038238 / 1057943 = 0.981374
 	dev: 56146 / 59955 = 0.936469
 	0:02:52.355354s elapsed
-Epoch 4 / 100: 
+Epoch 4 / 100:
 	train: 1042193 / 1057943 = 0.985113
 	dev: 56158 / 59955 = 0.936669
 	0:03:02.424420s elapsed
-Epoch 5 / 100: 
+Epoch 5 / 100:
 	train: 1044745 / 1057943 = 0.987525
 	dev: 56124 / 59955 = 0.936102
 	0:03:06.219416s elapsed
-Epoch 6 / 100: 
+Epoch 6 / 100:
 	train: 1044301 / 1057943 = 0.987105
 	dev: 56145 / 59955 = 0.936452
 	0:02:55.813929s elapsed
-Epoch 7 / 100: 
+Epoch 7 / 100:
 	train: 1047915 / 1057943 = 0.990521
 	dev: 56305 / 59955 = 0.939121
 	0:02:50.198971s elapsed
-Epoch 8 / 100: 
+Epoch 8 / 100:
 	train: 1045026 / 1057943 = 0.987790
 	dev: 56227 / 59955 = 0.937820
 	0:02:51.763004s elapsed
-Epoch 9 / 100: 
+Epoch 9 / 100:
 	train: 1049256 / 1057943 = 0.991789
 	dev: 56286 / 59955 = 0.938804
 	0:02:50.861832s elapsed
-Epoch 10 / 100: 
+Epoch 10 / 100:
 	train: 1048541 / 1057943 = 0.991113
 	dev: 56270 / 59955 = 0.938537
 	0:02:49.854108s elapsed
-Epoch 11 / 100: 
+Epoch 11 / 100:
 	train: 1049809 / 1057943 = 0.992311
 	dev: 56317 / 59955 = 0.939321
 	0:02:51.419319s elapsed
-Epoch 12 / 100: 
+Epoch 12 / 100:
 	train: 1050576 / 1057943 = 0.993036
 	dev: 56250 / 59955 = 0.938204
 	0:02:56.579562s elapsed
-Epoch 13 / 100: 
+Epoch 13 / 100:
 	train: 1050584 / 1057943 = 0.993044
 	dev: 56288 / 59955 = 0.938837
 	0:02:49.276380s elapsed
-Epoch 14 / 100: 
+Epoch 14 / 100:
 	train: 1050386 / 1057943 = 0.992857
 	dev: 56214 / 59955 = 0.937603
 	0:02:49.136191s elapsed
-Epoch 15 / 100: 
+Epoch 15 / 100:
 	train: 1050280 / 1057943 = 0.992757
 	dev: 56235 / 59955 = 0.937953
 	0:02:53.226767s elapsed
-Epoch 16 / 100: 
+Epoch 16 / 100:
 	train: 1050938 / 1057943 = 0.993379
 	dev: 56290 / 59955 = 0.938871
 	0:02:58.754523s elapsed
-Epoch 17 / 100: 
+Epoch 17 / 100:
 	train: 1050860 / 1057943 = 0.993305
 	dev: 56197 / 59955 = 0.937320
 	0:03:02.402109s elapsed
-Epoch 18 / 100: 
+Epoch 18 / 100:
 	train: 1051456 / 1057943 = 0.993868
 	dev: 56296 / 59955 = 0.938971
 	0:03:02.663931s elapsed
-Epoch 19 / 100: 
+Epoch 19 / 100:
 	train: 1051338 / 1057943 = 0.993757
 	dev: 56240 / 59955 = 0.938037
 	0:02:59.775430s elapsed
-Epoch 20 / 100: 
+Epoch 20 / 100:
 	train: 1051493 / 1057943 = 0.993903
 	dev: 56273 / 59955 = 0.938587
 	0:03:02.783106s elapsed
-Epoch 21 / 100: 
+Epoch 21 / 100:
 	train: 1051072 / 1057943 = 0.993505
 	dev: 56191 / 59955 = 0.937220
 	0:03:06.672295s elapsed
-Epoch 22 / 100: 
+Epoch 22 / 100:
 	train: 1051454 / 1057943 = 0.993866
 	dev: 56238 / 59955 = 0.938004
 	0:03:07.070418s elapsed
 max precision of dev is 0.939321 at epoch 11
-mean time of each epoch is 0:03:04.130085s
+mean time of each epoch is 0:02:56.124429s
 Precision of test: 76405 / 81578 = 0.936588
 1:07:59.729678s elapsed
 

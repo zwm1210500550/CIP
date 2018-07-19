@@ -1,4 +1,3 @@
-nohup: 忽略输入
 Creating Global Linear Model with 31 tags
 	use feature extracion optimization
 	shuffle the data at each epoch
@@ -92,10 +91,9 @@ Epoch 20 / 100:
 	dev: 44224 / 50319 = 0.878873
 	0:00:05.350062s elapsed
 max precision of dev is 0.878873 at epoch 14
-mean time of each epoch is 0:00:06.377668s
+mean time of each epoch is 0:00:06.073969s
 0:02:08.804675s elapsed
 
-nohup: 忽略输入
 Creating Global Linear Model with 35 tags
 	use feature extracion optimization
 	shuffle the data at each epoch
@@ -269,7 +267,7 @@ Epoch 40 / 100:
 	dev: 55927 / 59955 = 0.932816
 	0:02:50.900200s elapsed
 max precision of dev is 0.936352 at epoch 29
-mean time of each epoch is 0:03:18.529351s
+mean time of each epoch is 0:03:13.687172s
 Precision of test: 76250 / 81578 = 0.934688
 2:13:18.219257s elapsed
 
