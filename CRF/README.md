@@ -32,7 +32,7 @@
 ```sh
 usage: run.py [-h] [-b] [--anneal] [--optimize] [--regularize] [--shuffle]
 
-Create Log Linear Model(LLM) for POS Tagging.
+Create Conditional Random Field(CRF) for POS Tagging.
 
 optional arguments:
   -h, --help        show this help message and exit
