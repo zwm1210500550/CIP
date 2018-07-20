@@ -67,7 +67,7 @@ class CRF(object):
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
-        lent = len(train)
+        nt = len(train)
 
         # 迭代指定次数训练模型
         for epoch in range(epochs):
@@ -81,14 +81,14 @@ class CRF(object):
             # 按照指定大小对数据分割批次
             batches = [train[i:i + batch_size]
                        for i in range(0, len(train), batch_size)]
-            lenb = len(batches)
+            nb = len(batches)
             # 根据批次数据更新权重
             for batch in batches:
                 if not anneal:
-                    self.update(batch, c, lent, eta)
+                    self.update(batch, c, nt, eta)
                 # 设置学习速率的指数衰减
                 else:
-                    self.update(batch, c, lent, eta * decay ** (count / lenb))
+                    self.update(batch, c, nt, eta * decay ** (count / nb))
                 count += 1
 
             print("Epoch %d / %d: " % (epoch, epochs))
@@ -107,7 +107,7 @@ class CRF(object):
                 break
         print("max precision of dev is %4f at epoch %d" %
               (max_precision, max_e))
-        print("mean time of each epoch is %ss" % (total_time / epoch))
+        print("mean time of each epoch is %ss" % (total_time / (epoch + 1)))
 
     def update(self, batch, c, n, eta):
         gradients = defaultdict(float)
