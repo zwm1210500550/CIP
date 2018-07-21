@@ -1,0 +1,173 @@
+#!/usr/bin/python
+# _*_coding:UTF-8_*_
+def check_dic(mylist, str):
+    # 避免词典重复的检查函数
+    if len(mylist) == 0:
+        mylist.append(str)
+        return True
+    for elem in mylist:
+        if elem == str:
+            return False
+    mylist.append(str)
+    return True
+
+
+def check_BOM(fh):
+    str = fh.read(24)
+    if str == 0xEFBBBF:
+        print "有BOM头"
+    else:
+        print "没有BOM头"
+        fh.seek(0, 0)
+
+def create_dic(list):
+    max_len = 0
+    with open('data.conll', 'r') as fh,open("word.dict", 'w') as fw:
+        check_BOM(fh)
+        count = 0  # 词汇数量
+        for line in fh:
+            if len(line)>1:
+                count += 1
+                cur_str = line.split()[1].decode('utf-8')
+                if check_dic(list, cur_str):
+                    if len(cur_str) > max_len:
+                        max_len = len(cur_str)
+                    fw.write(cur_str.encode('utf-8')+'\n')
+    return max_len
+
+def connect_sentence():
+    with open('data.conll', 'r') as fh,open("data.txt", 'w') as fw:
+        for line in fh:
+            if len(line)>1:
+                fw.write(line.strip().split()[1])
+            else:
+                fw.write('\n')
+#反向
+def rmax_match_out(list, max_len,str):
+    with open("data.out", 'w') as fw:
+        l = len(str)
+        p1 = l
+        while p1 > 0:
+            i = max_len
+            p2 = p1 - i
+            while i > 0:
+                p2 = p1 - i
+                while p2 < 0:
+                    i -= 1
+                    p2 = p1 - i
+                cur_str = str[p2:p1]
+                if cur_str in list:
+                    p1 = p2
+                    fw.write(cur_str + '\t')
+                    break
+                else:
+                    if i == 1:
+                        p1 = p2
+                        fw.write(cur_str + '\t')
+                        break
+                    i -= 1
+#正向
+def max_match_out(list, max_len, str):
+    with open('data.out','a') as fw:
+        p1 = 0
+        correct=0
+        sumup=0
+        l=len(str)
+        while p1<l:
+            i=max_len
+            while i>0:
+                p2 = p1 + i
+                while p2>l:
+                    i-=1
+                    p2-=1
+                cur_str=str[p1:p2]
+                if cur_str in list:
+                    p1=p2
+                    correct+=1
+                    sumup+=1
+                    fw.write(cur_str.encode('utf-8')+'\n')
+                    break
+                elif i==1:
+                    p1=p2
+                    sumup+=1
+                    fw.write(cur_str.encode('utf-8')+'\n')
+                    break
+                i-=1
+    return correct,sumup
+
+def word_segmentation(list, max_len):
+    correct=0
+    sumup=0
+    with open('data.txt','r') as fh:
+        for i in fh:
+            i=i.strip().decode('utf-8')
+            c,s=max_match_out(list,max_len,i)
+            correct+=c
+            sumup+=s
+    return correct*1.0/sumup
+
+def evaluation():
+    match = 0  # 正确匹配的词的数量
+    sumup = 0  # 分割出的词的数量
+    sum_2=0
+    with open('data.out', 'r') as f_compare, open('data.conll', 'r') as f_stan:
+        diff = 0  # >0代表str_c位置靠前，<0代表str_s位置靠前
+        str_c = f_compare.readline().strip().decode('utf-8')  # 正向加到diff
+        str_s = f_stan.readline()
+        if len(str_s) < 2:  # 跳过换行
+            str_s = f_stan.readline()
+        str_s = str_s.strip().split()[1].decode('utf-8')  # 负向减到diff
+        sum_2+=1
+        while len(str_s)>0 and len(str_c)>0:
+            if diff == 0:
+                if len(str_s) == len(str_c):
+                    if str_s == str_c:
+                        match += 1
+                    sumup += 1
+                    str_c = f_compare.readline().strip().decode('utf-8')
+                    str_s = f_stan.readline()
+                    if len(str_s) < 2:  # 跳过换行
+                        str_s = f_stan.readline()
+                    if len(str_s)>1:
+                        str_s = str_s.strip().split()[1].decode('utf-8')  # 负向减到diff
+                        sum_2 += 1
+                elif len(str_c) > len(str_s):
+                    diff -= len(str_s)
+                    str_s = f_stan.readline()
+                    if len(str_s) < 2:  # 跳过换行
+                        str_s = f_stan.readline()
+                    if len(str_s)>1:
+                        str_s = str_s.strip().split()[1].decode('utf-8')  # 负向减到diff
+                        sum_2 += 1
+                elif len(str_c) < len(str_s):
+                    diff = diff + len(str_c)
+                    str_c = f_compare.readline().strip().decode('utf-8')
+                    sumup += 1
+            elif diff > 0:
+                diff -= len(str_s)
+                str_s = f_stan.readline()
+                if len(str_s) < 2:  # 跳过换行
+                    str_s = f_stan.readline()
+                if len(str_s) > 1:
+                    str_s = str_s.strip().split()[1].decode('utf-8')  # 负向减到diff
+                    sum_2 += 1
+            else:
+                diff += len(str_c)
+                sumup += 1
+                str_c = f_compare.readline().strip().decode('utf-8')
+    return match,sumup,sum_2
+
+word_list = []
+max_len = create_dic(word_list)
+connect_sentence()
+word_segmentation(word_list, max_len)
+match,s1,s2=evaluation()
+P=match*1.0/s1
+R=match*1.0/s2
+F=(P*R*2)/(P+R)
+print '正确识别个体数：'+str(match)
+print '识别出的个体总数：'+str(s1)
+print '集中存在的个体总数：'+str(s2)
+print '正确率：'+str(P)
+print '召回率：'str(R)
+print 'F值：'+str(F)
