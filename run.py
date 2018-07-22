@@ -63,7 +63,7 @@ print("\tepochs: %d\n\tbatch_size: %d\n\tinterval: %d\t\n\teta: %f" %
 if args.anneal:
     print("\tdacay: %f" % config.decay)
 if args.regularize:
-    print("\tc: %f" % config.lmbda)
+    print("\tlmbda: %f" % config.lmbda)
 llm.SGD(train, dev, file,
         epochs=config.epochs,
         batch_size=config.batch_size,
