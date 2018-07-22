@@ -7,7 +7,7 @@ class Config(object):
         self.epochs = 100
         self.batch_size = 50
         self.decay = 0.96
-        self.c = 0.01
+        self.lmbda = 0.01
         if bigdata:
             self.eta = 0.2
             self.interval = 10
