@@ -1,0 +1,201 @@
+Creating Linear Model with 31 tags
+	use average perceptron
+	shuffle the data at each epoch
+Using 803 sentences to create the feature space
+The size of the feature space is 81113
+Using online-training algorithm to train the model
+	epochs: 100
+	interval: 5
+Epoch 0 / 100:
+	train: 19155 / 20454 = 0.936492
+	dev: 41606 / 50319 = 0.826845
+	0:00:23.791317s elapsed
+Epoch 1 / 100:
+	train: 19706 / 20454 = 0.963430
+	dev: 42413 / 50319 = 0.842882
+	0:00:23.240173s elapsed
+Epoch 2 / 100:
+	train: 19919 / 20454 = 0.973844
+	dev: 42792 / 50319 = 0.850414
+	0:00:23.046017s elapsed
+Epoch 3 / 100:
+	train: 20023 / 20454 = 0.978928
+	dev: 42916 / 50319 = 0.852879
+	0:00:22.879468s elapsed
+Epoch 4 / 100:
+	train: 20092 / 20454 = 0.982302
+	dev: 42990 / 50319 = 0.854349
+	0:00:23.060775s elapsed
+Epoch 5 / 100:
+	train: 20124 / 20454 = 0.983866
+	dev: 43041 / 50319 = 0.855363
+	0:00:23.274858s elapsed
+Epoch 6 / 100:
+	train: 20144 / 20454 = 0.984844
+	dev: 43069 / 50319 = 0.855919
+	0:00:23.349947s elapsed
+Epoch 7 / 100:
+	train: 20159 / 20454 = 0.985577
+	dev: 43097 / 50319 = 0.856476
+	0:00:23.926032s elapsed
+Epoch 8 / 100:
+	train: 20176 / 20454 = 0.986409
+	dev: 43105 / 50319 = 0.856635
+	0:00:24.087928s elapsed
+Epoch 9 / 100:
+	train: 20193 / 20454 = 0.987240
+	dev: 43125 / 50319 = 0.857032
+	0:00:23.532336s elapsed
+Epoch 10 / 100:
+	train: 20199 / 20454 = 0.987533
+	dev: 43132 / 50319 = 0.857171
+	0:00:23.041940s elapsed
+Epoch 11 / 100:
+	train: 20202 / 20454 = 0.987680
+	dev: 43140 / 50319 = 0.857330
+	0:00:23.460543s elapsed
+Epoch 12 / 100:
+	train: 20205 / 20454 = 0.987826
+	dev: 43144 / 50319 = 0.857410
+	0:00:22.785707s elapsed
+Epoch 13 / 100:
+	train: 20205 / 20454 = 0.987826
+	dev: 43142 / 50319 = 0.857370
+	0:00:23.099483s elapsed
+Epoch 14 / 100:
+	train: 20206 / 20454 = 0.987875
+	dev: 43152 / 50319 = 0.857569
+	0:00:23.370917s elapsed
+Epoch 15 / 100:
+	train: 20211 / 20454 = 0.988120
+	dev: 43147 / 50319 = 0.857469
+	0:00:22.680279s elapsed
+Epoch 16 / 100:
+	train: 20212 / 20454 = 0.988169
+	dev: 43149 / 50319 = 0.857509
+	0:00:23.128790s elapsed
+Epoch 17 / 100:
+	train: 20212 / 20454 = 0.988169
+	dev: 43150 / 50319 = 0.857529
+	0:00:22.855014s elapsed
+Epoch 18 / 100:
+	train: 20212 / 20454 = 0.988169
+	dev: 43145 / 50319 = 0.857430
+	0:00:22.922754s elapsed
+Epoch 19 / 100:
+	train: 20213 / 20454 = 0.988217
+	dev: 43143 / 50319 = 0.857390
+	0:00:22.492840s elapsed
+Epoch 20 / 100:
+	train: 20213 / 20454 = 0.988217
+	dev: 43143 / 50319 = 0.857390
+	0:00:22.038471s elapsed
+max precision of dev is 0.857569 at epoch 14
+mean time of each epoch is 0:00:23.145980s
+0:08:07.644310s elapsed
+
+Creating Linear Model with 35 tags
+	use average perceptron
+	shuffle the data at each epoch
+Using 46572 sentences to create the feature space
+The size of the feature space is 1687718
+Using online-training algorithm to train the model
+	epochs: 100
+	interval: 10
+Epoch 0 / 100:
+	train: 1001927 / 1057943 = 0.947052
+	dev: 55461 / 59955 = 0.925044
+	0:15:44.481370s elapsed
+Epoch 1 / 100:
+	train: 1014455 / 1057943 = 0.958894
+	dev: 55875 / 59955 = 0.931949
+	0:14:51.857010s elapsed
+Epoch 2 / 100:
+	train: 1021421 / 1057943 = 0.965478
+	dev: 56023 / 59955 = 0.934417
+	0:13:14.810626s elapsed
+Epoch 3 / 100:
+	train: 1026138 / 1057943 = 0.969937
+	dev: 56101 / 59955 = 0.935718
+	0:12:29.801107s elapsed
+Epoch 4 / 100:
+	train: 1029585 / 1057943 = 0.973195
+	dev: 56163 / 59955 = 0.936753
+	0:12:49.595772s elapsed
+Epoch 5 / 100:
+	train: 1032278 / 1057943 = 0.975741
+	dev: 56192 / 59955 = 0.937236
+	0:12:45.619886s elapsed
+Epoch 6 / 100:
+	train: 1034449 / 1057943 = 0.977793
+	dev: 56212 / 59955 = 0.937570
+	0:12:32.445807s elapsed
+Epoch 7 / 100:
+	train: 1036212 / 1057943 = 0.979459
+	dev: 56227 / 59955 = 0.937820
+	0:12:36.022484s elapsed
+Epoch 8 / 100:
+	train: 1037716 / 1057943 = 0.980881
+	dev: 56220 / 59955 = 0.937703
+	0:12:36.143514s elapsed
+Epoch 9 / 100:
+	train: 1038981 / 1057943 = 0.982077
+	dev: 56228 / 59955 = 0.937837
+	0:12:23.448860s elapsed
+Epoch 10 / 100:
+	train: 1040043 / 1057943 = 0.983080
+	dev: 56230 / 59955 = 0.937870
+	0:11:47.439761s elapsed
+Epoch 11 / 100:
+	train: 1041020 / 1057943 = 0.984004
+	dev: 56233 / 59955 = 0.937920
+	0:11:29.008114s elapsed
+Epoch 12 / 100:
+	train: 1041852 / 1057943 = 0.984790
+	dev: 56221 / 59955 = 0.937720
+	0:11:47.022389s elapsed
+Epoch 13 / 100:
+	train: 1042573 / 1057943 = 0.985472
+	dev: 56215 / 59955 = 0.937620
+	0:11:24.863496s elapsed
+Epoch 14 / 100:
+	train: 1043311 / 1057943 = 0.986169
+	dev: 56220 / 59955 = 0.937703
+	0:11:16.707550s elapsed
+Epoch 15 / 100:
+	train: 1043922 / 1057943 = 0.986747
+	dev: 56218 / 59955 = 0.937670
+	0:11:25.704977s elapsed
+Epoch 16 / 100:
+	train: 1044479 / 1057943 = 0.987273
+	dev: 56215 / 59955 = 0.937620
+	0:11:30.031030s elapsed
+Epoch 17 / 100:
+	train: 1044949 / 1057943 = 0.987718
+	dev: 56211 / 59955 = 0.937553
+	0:11:29.443997s elapsed
+Epoch 18 / 100:
+	train: 1045358 / 1057943 = 0.988104
+	dev: 56215 / 59955 = 0.937620
+	0:11:35.952768s elapsed
+Epoch 19 / 100:
+	train: 1045777 / 1057943 = 0.988500
+	dev: 56217 / 59955 = 0.937653
+	0:11:39.480394s elapsed
+Epoch 20 / 100:
+	train: 1046121 / 1057943 = 0.988825
+	dev: 56226 / 59955 = 0.937803
+	0:11:34.518693s elapsed
+Epoch 21 / 100:
+	train: 1046540 / 1057943 = 0.989222
+	dev: 56225 / 59955 = 0.937787
+	0:11:31.869142s elapsed
+Epoch 22 / 100:
+	train: 1046871 / 1057943 = 0.989534
+	dev: 56222 / 59955 = 0.937737
+	0:11:34.425428s elapsed
+max precision of dev is 0.937920 at epoch 11
+mean time of each epoch is 0:12:16.117138s
+Precision of test: 76301 / 81578 = 0.935313
+4:43:26.147503s elapsed
+
