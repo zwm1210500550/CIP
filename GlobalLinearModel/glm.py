@@ -24,12 +24,12 @@ def preprocess(fdata):
 
 
 class GlobalLinearModel(object):
+    # 句首词性
+    SOS = '<SOS>'
 
     def __init__(self, tags):
         # 所有不同的词性
         self.tags = tags
-        # 句首词性
-        self.BOS = 'BOS'
 
         self.n = len(self.tags)
 
@@ -38,7 +38,7 @@ class GlobalLinearModel(object):
         self.epsilon = list({
             f for wordseq, tagseq in sentences
             for f in set(
-                self.instantiate(wordseq, 0, self.BOS, tagseq[0])
+                self.instantiate(wordseq, 0, self.SOS, tagseq[0])
             ).union(*[
                 self.instantiate(wordseq, i, tagseq[i - 1], tag)
                 for i, tag in enumerate(tagseq[1:], 1)
@@ -102,7 +102,7 @@ class GlobalLinearModel(object):
         preseq = self.predict(wordseq)
         # 如果预测词性序列与正确词性序列不同，则更新权重
         if not np.array_equal(tagseq, preseq):
-            prev_tag, prev_pre = self.BOS, self.BOS
+            prev_tag, prev_pre = self.SOS, self.SOS
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
                 cfreqs = Counter(self.instantiate(wordseq, i, prev_tag, tag))
                 efreqs = Counter(self.instantiate(wordseq, i, prev_pre, pre))
@@ -129,7 +129,7 @@ class GlobalLinearModel(object):
             for bifvs in self.BF
         ])
 
-        fvs = [self.instantiate(wordseq, 0, self.BOS, tag)
+        fvs = [self.instantiate(wordseq, 0, self.SOS, tag)
                for tag in self.tags]
         delta[0] = [self.score(fv, average) for fv in fvs]
 

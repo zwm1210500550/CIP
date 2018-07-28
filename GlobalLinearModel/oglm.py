@@ -24,12 +24,12 @@ def preprocess(fdata):
 
 
 class GlobalLinearModel(object):
+    # 句首词性
+    SOS = '<SOS>'
 
     def __init__(self, tags):
         # 所有不同的词性
         self.tags = tags
-        # 句首词性
-        self.BOS = 'BOS'
         # 词性对应索引的字典
         self.tdict = {t: i for i, t in enumerate(tags)}
 
@@ -40,7 +40,7 @@ class GlobalLinearModel(object):
         self.epsilon = list({
             f for wordseq, tagseq in sentences
             for f in set(
-                self.instantiate(wordseq, 0, self.BOS)
+                self.instantiate(wordseq, 0, self.SOS)
             ).union(*[
                 self.instantiate(wordseq, i, tagseq[i - 1])
                 for i, tag in enumerate(tagseq[1:], 1)
@@ -101,7 +101,7 @@ class GlobalLinearModel(object):
         preseq = self.predict(wordseq)
         # 如果预测词性序列与正确词性序列不同，则更新权重
         if not np.array_equal(tagseq, preseq):
-            prev_tag, prev_pre = self.BOS, self.BOS
+            prev_tag, prev_pre = self.SOS, self.SOS
             for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
                 ti, pi = self.tdict[tag], self.tdict[pre]
 
@@ -143,7 +143,7 @@ class GlobalLinearModel(object):
         biscores = np.array([self.score(bifv, average)
                              for bifv in self.BF])
 
-        fv = self.instantiate(wordseq, 0, self.BOS)
+        fv = self.instantiate(wordseq, 0, self.SOS)
         delta[0] = self.score(fv, average)
 
         for i in range(1, T):
