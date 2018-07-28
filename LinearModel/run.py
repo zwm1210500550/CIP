@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 from config import Config
+from corpus import Corpus
 
 # 解析命令参数
 parser = argparse.ArgumentParser(
@@ -24,32 +25,31 @@ parser.add_argument('--file', '-f', action='store', dest='file',
 args = parser.parse_args()
 
 if args.optimize:
-    from olm import LinearModel, preprocess
+    from olm import LinearModel
 else:
-    from lm import LinearModel, preprocess
+    from lm import LinearModel
 
 # 根据参数读取配置
 config = Config(args.bigdata)
 
-train = preprocess(config.ftrain)
-dev = preprocess(config.fdev)
+print("Preprocessing the data")
+corpus = Corpus(config.ftrain)
+train = corpus.load(config.ftrain)
+dev = corpus.load(config.fdev)
 file = args.file if args.file else config.lmpkl
-
-wordseqs, tagseqs = zip(*train)
-tags = sorted(set(np.hstack(tagseqs)))
 
 start = datetime.now()
 
-print("Creating Linear Model with %d tags" % (len(tags)))
+print("Creating Linear Model with %d tags" % corpus.nt)
 if args.optimize:
     print("\tuse feature extracion optimization")
 if args.average:
     print("\tuse average perceptron")
 if args.shuffle:
     print("\tshuffle the data at each epoch")
-lm = LinearModel(tags)
+lm = LinearModel(corpus.nt)
 
-print("Using %d sentences to create the feature space" % (len(train)))
+print("Using %d sentences to create the feature space" % corpus.ns)
 lm.create_feature_space(train)
 print("The size of the feature space is %d" % lm.d)
 
@@ -62,7 +62,7 @@ lm.online(train, dev, file,
           shuffle=args.shuffle)
 
 if args.bigdata:
-    test = preprocess(config.ftest)
+    test = corpus.load(config.ftest)
     lm = LinearModel.load(file)
     print("Precision of test: %d / %d = %4f" %
           lm.evaluate(test, average=args.average))
