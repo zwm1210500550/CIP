@@ -19,21 +19,6 @@ class Corpus(object):
         self.nw = len(self.words)
         self.nt = len(self.tags)
 
-    def preprocess(self, fdata):
-        start = 0
-        sentences = []
-        with open(fdata, 'r') as train:
-            lines = [line for line in train]
-        for i, line in enumerate(lines):
-            if len(lines[i]) <= 1:
-                splits = [l.split()[1:4:2] for l in lines[start:i]]
-                wordseq, tagseq = zip(*splits)
-                start = i + 1
-                while start < len(lines) and len(lines[start]) <= 1:
-                    start += 1
-                sentences.append((wordseq, tagseq))
-        return sentences
-
     def load(self, fdata):
         data = []
         sentences = self.preprocess(fdata)
@@ -47,3 +32,19 @@ class Corpus(object):
 
     def size(self):
         return self.nw - 1, self.nt
+
+    @staticmethod
+    def preprocess(fdata):
+        start = 0
+        sentences = []
+        with open(fdata, 'r') as train:
+            lines = [line for line in train]
+        for i, line in enumerate(lines):
+            if len(lines[i]) <= 1:
+                splits = [l.split()[1:4:2] for l in lines[start:i]]
+                wordseq, tagseq = zip(*splits)
+                start = i + 1
+                while start < len(lines) and len(lines[start]) <= 1:
+                    start += 1
+                sentences.append((wordseq, tagseq))
+        return sentences
