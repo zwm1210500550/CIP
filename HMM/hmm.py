@@ -17,9 +17,9 @@ class HMM(object):
         trans = np.zeros((self.nt + 1, self.nt + 1))
         emit = np.zeros((self.nw, self.nt))
 
-        for wis, tis in train_data:
+        for wiseq, tiseq in train_data:
             prev = -1
-            for wi, ti in zip(wis, tis):
+            for wi, ti in zip(wiseq, tiseq):
                 trans[ti, prev] += 1
                 emit[wi, ti] += 1
                 prev = ti
@@ -43,17 +43,17 @@ class HMM(object):
         sums = np.sum(matrix, axis=0)
         return (matrix + alpha) / (sums + alpha * len(matrix))
 
-    def predict(self, wis):
-        T = len(wis)
+    def predict(self, wiseq):
+        T = len(wiseq)
         delta = np.zeros((T, self.nt))
         paths = np.zeros((T, self.nt), dtype='int')
 
-        delta[0] = self.SOS + self.B[wis[0]]
+        delta[0] = self.SOS + self.B[wiseq[0]]
 
         for i in range(1, T):
             probs = self.A + delta[i - 1]
             paths[i] = np.argmax(probs, axis=1)
-            delta[i] = probs[np.arange(self.nt), paths[i]] + self.B[wis[i]]
+            delta[i] = probs[np.arange(self.nt), paths[i]] + self.B[wiseq[i]]
         prev = np.argmax(delta[-1] + self.EOS)
 
         predict = [prev]
@@ -66,10 +66,10 @@ class HMM(object):
     def evaluate(self, data):
         tp, total = 0, 0
 
-        for wis, tis in data:
-            total += len(wis)
-            predict = np.array(self.predict(wis))
-            tp += np.sum(tis == predict)
+        for wiseq, tiseq in data:
+            total += len(wiseq)
+            predict = np.array(self.predict(wiseq))
+            tp += np.sum(tiseq == predict)
         precision = tp / total
         return tp, total, precision
 

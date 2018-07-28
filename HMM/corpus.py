@@ -24,10 +24,10 @@ class Corpus(object):
         sentences = self.preprocess(fdata)
 
         for wordseq, tagseq in sentences:
-            wis = [self.wdict[w] if w in self.wdict else self.ui
-                   for w in wordseq]
-            eis = [self.tdict[t] for t in tagseq]
-            data.append((wis, eis))
+            wiseq = [self.wdict[w] if w in self.wdict else self.ui
+                     for w in wordseq]
+            tiseq = [self.tdict[t] for t in tagseq]
+            data.append((wiseq, tiseq))
         return data
 
     def size(self):
