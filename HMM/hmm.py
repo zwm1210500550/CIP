@@ -13,11 +13,11 @@ class HMM(object):
         # 词性数量
         self.nt = nt
 
-    def train(self, train_data, file, alpha=0.01):
+    def train(self, train, file, alpha=0.01):
         trans = np.zeros((self.nt + 1, self.nt + 1))
         emit = np.zeros((self.nw, self.nt))
 
-        for wiseq, tiseq in train_data:
+        for wiseq, tiseq in train:
             prev = -1
             for wi, ti in zip(wiseq, tiseq):
                 trans[ti, prev] += 1
