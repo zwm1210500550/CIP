@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 from config import Config
+from corpus import Corpus
 
 # 解析命令参数
 parser = argparse.ArgumentParser(
@@ -26,23 +27,22 @@ parser.add_argument('--file', '-f', action='store', dest='file',
 args = parser.parse_args()
 
 if args.optimize:
-    from ollm import LogLinearModel, preprocess
+    from ollm import LogLinearModel
 else:
-    from llm import LogLinearModel, preprocess
+    from llm import LogLinearModel
 
 # 根据参数读取配置
 config = Config(args.bigdata)
 
-train = preprocess(config.ftrain)
-dev = preprocess(config.fdev)
+print("Preprocessing the data")
+corpus = Corpus(config.ftrain)
+train = corpus.load(config.ftrain)
+dev = corpus.load(config.fdev)
 file = args.file if args.file else config.llmpkl
-
-wordseqs, tagseqs = zip(*train)
-tags = sorted(set(np.hstack(tagseqs)))
 
 start = datetime.now()
 
-print("Creating Log Linear Model with %d tags" % (len(tags)))
+print("Creating Log Linear Model with %d tags" % corpus.nt)
 if args.optimize:
     print("\tuse feature extracion optimization")
 if args.anneal:
@@ -51,9 +51,9 @@ if args.regularize:
     print("\tuse L2 regularization")
 if args.shuffle:
     print("\tshuffle the data at each epoch")
-llm = LogLinearModel(tags)
+llm = LogLinearModel(corpus.nt)
 
-print("Using %d sentences to create the feature space" % (len(train)))
+print("Using %d sentences to create the feature space" % corpus.ns)
 llm.create_feature_space(train)
 print("The size of the feature space is %d" % llm.d)
 
@@ -76,7 +76,7 @@ llm.SGD(train, dev, file,
         shuffle=args.shuffle)
 
 if args.bigdata:
-    test = preprocess(config.ftest)
+    test = corpus.load(config.ftest)
     llm = LogLinearModel.load(file)
     print("Precision of test: %d / %d = %4f" % llm.evaluate(test))
 

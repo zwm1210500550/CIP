@@ -8,43 +8,20 @@ from datetime import datetime, timedelta
 import numpy as np
 
 
-def preprocess(fdata):
-    start = 0
-    sentences = []
-    with open(fdata, 'r') as train:
-        lines = [line for line in train]
-    for i, line in enumerate(lines):
-        if len(lines[i]) <= 1:
-            wordseq, tagseq = zip(*[l.split()[1:4:2] for l in lines[start:i]])
-            start = i + 1
-            while start < len(lines) and len(lines[start]) <= 1:
-                start += 1
-            sentences.append((wordseq, tagseq))
-    return sentences
-
-
 class GlobalLinearModel(object):
-    # 句首词性
-    SOS = '<SOS>'
 
-    def __init__(self, tags):
-        # 所有不同的词性
-        self.tags = tags
-        # 词性对应索引的字典
-        self.tdict = {t: i for i, t in enumerate(tags)}
+    def __init__(self, nt):
+        # 词性数量
+        self.nt = nt
 
-        self.n = len(self.tags)
-
-    def create_feature_space(self, sentences):
+    def create_feature_space(self, data):
         # 特征空间
         self.epsilon = list({
-            f for wordseq, tagseq in sentences
-            for f in set(
-                self.instantiate(wordseq, 0, self.SOS)
-            ).union(*[
-                self.instantiate(wordseq, i, tagseq[i - 1])
-                for i, tag in enumerate(tagseq[1:], 1)
-            ])
+            f for wordseq, tiseq in data
+            for f in set(self.instantiate(wordseq, 0, -1)).union(
+                *[self.instantiate(wordseq, i, tiseq[i - 1])
+                  for i, ti in enumerate(tiseq[1:], 1)]
+            )
         })
         # 特征对应索引的字典
         self.fdict = {f: i for i, f in enumerate(self.epsilon)}
@@ -52,11 +29,11 @@ class GlobalLinearModel(object):
         self.d = len(self.epsilon)
 
         # 特征权重
-        self.W = np.zeros((self.d, self.n))
+        self.W = np.zeros((self.d, self.nt))
         # 累加特征权重
-        self.V = np.zeros((self.d, self.n))
+        self.V = np.zeros((self.d, self.nt))
         # Bigram特征
-        self.BF = [self.bigram(prev_tag) for prev_tag in self.tags]
+        self.BF = [self.bigram(prev_ti) for prev_ti in range(self.nt)]
 
     def online(self, train, dev, file, epochs, interval, average, shuffle):
         # 记录迭代时间
@@ -71,7 +48,7 @@ class GlobalLinearModel(object):
             if shuffle:
                 random.shuffle(train)
             # 保存更新时间戳和每个特征最近更新时间戳的记录
-            self.k, self.R = 0, np.zeros((self.d, self.n), dtype='int')
+            self.k, self.R = 0, np.zeros((self.d, self.nt), dtype='int')
             for batch in train:
                 self.update(batch)
             self.V += [(self.k - r) * w for r, w in zip(self.R, self.W)]
@@ -96,16 +73,14 @@ class GlobalLinearModel(object):
         print("mean time of each epoch is %ss" % (total_time / (epoch + 1)))
 
     def update(self, batch):
-        wordseq, tagseq = batch
+        wordseq, tiseq = batch
         # 根据现有权重向量预测词性序列
-        preseq = self.predict(wordseq)
+        piseq = self.predict(wordseq)
         # 如果预测词性序列与正确词性序列不同，则更新权重
-        if not np.array_equal(tagseq, preseq):
-            prev_tag, prev_pre = self.SOS, self.SOS
-            for i, (tag, pre) in enumerate(zip(tagseq, preseq)):
-                ti, pi = self.tdict[tag], self.tdict[pre]
-
-                cfreqs = Counter(self.instantiate(wordseq, i, prev_tag))
+        if not np.array_equal(tiseq, piseq):
+            prev_ti, prev_pi = -1, -1
+            for i, (ti, pi) in enumerate(zip(tiseq, piseq)):
+                cfreqs = Counter(self.instantiate(wordseq, i, prev_ti))
                 # 统计正确词性不同权重出现的次数
                 cfis, cfcounts = map(list, zip(*[
                     (self.fdict[f], cfreqs[f])
@@ -119,7 +94,7 @@ class GlobalLinearModel(object):
                 # 更新时间戳记录
                 self.R[cfis, ti] = self.k
 
-                efreqs = Counter(self.instantiate(wordseq, i, prev_pre))
+                efreqs = Counter(self.instantiate(wordseq, i, prev_pi))
                 # 统计预测词性不同权重出现的次数
                 efis, efcounts = map(list, zip(*[
                     (self.fdict[f], efreqs[f])
@@ -133,41 +108,41 @@ class GlobalLinearModel(object):
                 # 更新时间戳记录
                 self.R[efis, pi] = self.k
 
-                prev_tag, prev_pre = tag, pre
+                prev_ti, prev_pi = ti, pi
             self.k += 1
 
     def predict(self, wordseq, average=False):
         T = len(wordseq)
-        delta = np.zeros((T, self.n))
-        paths = np.zeros((T, self.n), dtype='int')
-        biscores = np.array([self.score(bifv, average)
-                             for bifv in self.BF])
+        delta = np.zeros((T, self.nt))
+        paths = np.zeros((T, self.nt), dtype='int')
+        biscores = np.array([self.score(bifv, average) for bifv in self.BF])
 
-        fv = self.instantiate(wordseq, 0, self.SOS)
+        fv = self.instantiate(wordseq, 0, -1)
         delta[0] = self.score(fv, average)
 
         for i in range(1, T):
             uniscores = self.score(self.unigram(wordseq, i), average)
             scores = np.transpose(biscores + uniscores) + delta[i - 1]
             paths[i] = np.argmax(scores, axis=1)
-            delta[i] = scores[np.arange(self.n), paths[i]]
+            delta[i] = scores[np.arange(self.nt), paths[i]]
         prev = np.argmax(delta[-1])
 
         predict = [prev]
         for i in reversed(range(1, T)):
             prev = paths[i, prev]
             predict.append(prev)
-        return [self.tags[i] for i in reversed(predict)]
+        predict.reverse()
+        return predict
 
     def score(self, fvector, average=False):
         # 获取特征索引
-        fis = [self.fdict[f] for f in fvector if f in self.fdict]
+        fiseq = [self.fdict[f] for f in fvector if f in self.fdict]
         # 计算特征对应权重得分
-        scores = self.V[fis] if average else self.W[fis]
+        scores = self.V[fiseq] if average else self.W[fiseq]
         return np.sum(scores, axis=0)
 
-    def bigram(self, prev_tag):
-        return [('01', prev_tag)]
+    def bigram(self, prev_ti):
+        return [('01', prev_ti)]
 
     def unigram(self, wordseq, index):
         word = wordseq[index]
@@ -205,18 +180,18 @@ class GlobalLinearModel(object):
             fvector.append(('15', word))
         return fvector
 
-    def instantiate(self, wordseq, index, prev_tag):
-        bigram = self.bigram(prev_tag)
+    def instantiate(self, wordseq, index, prev_ti):
+        bigram = self.bigram(prev_ti)
         unigram = self.unigram(wordseq, index)
         return bigram + unigram
 
-    def evaluate(self, sentences, average=False):
+    def evaluate(self, data, average=False):
         tp, total = 0, 0
 
-        for wordseq, tagseq in sentences:
+        for wordseq, tiseq in data:
             total += len(wordseq)
-            preseq = np.array(self.predict(wordseq, average))
-            tp += np.sum(tagseq == preseq)
+            piseq = np.array(self.predict(wordseq, average))
+            tp += np.sum(tiseq == piseq)
         precision = tp / total
         return tp, total, precision
 
