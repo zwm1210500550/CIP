@@ -63,7 +63,7 @@ class LogLinearModel(object):
                     self.update(batch, lmbda, n, eta)
                 # 设置学习速率的指数衰减
                 else:
-                    self.update(batch, lmbda, nt, eta * decay ** (count / nb))
+                    self.update(batch, lmbda, n, eta * decay ** (count / nb))
                 count += 1
 
             print("Epoch %d / %d: " % (epoch, epochs))
