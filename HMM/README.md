@@ -24,13 +24,9 @@
                                                   #或者'../big-data/dev.conll'
         'alpha': 0.3                               #平滑参数
     }
-    
     $ cd ./src
-<<<<<<< HEAD
     $ python3 HMM.py			#修改config.py中的参数
-=======
     $ python HMM.py			#修改config.py中的参数
->>>>>>> 50e2fc32bcf935474f19bcc64d27bf9f2440fcae
 ### 3.参考结果
 #### (1)小数据测试
 
@@ -48,7 +44,6 @@
 | 参数alpha |       0.3        |
 |   准确率   |      75.74%      |
 |  执行时间   |      0：0：16      |
-
 
 
 #### (2)大数据测试

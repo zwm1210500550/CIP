@@ -100,9 +100,9 @@ class global_linear_model(object):
         length = len(sentence)
         delta = np.zeros((length,self.N)) 
         path = np.zeros((length,self.N),dtype=int)
-        cur_tag = sentence[0][1]
-        features_first = self.create_feature_template(sentence,0,"start",cur_tag)
-        delta[0][self.tag_to_index[cur_tag]] = self.score(features_first,averaged)
+        for i in range(self.N):
+            features_first = self.create_feature_template(sentence,0,"start",self.index_to_tag[i])
+            delta[0][i] = self.score(features_first,averaged)
         path[0] = -1
         bigram_scores = np.array([[self.score(_bigram_feature,averaged) for _bigram_feature in bigram_feature] for bigram_feature in self.bigram_features])
         for i in range(1,length):
