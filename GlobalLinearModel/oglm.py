@@ -115,14 +115,14 @@ class GlobalLinearModel(object):
         T = len(wordseq)
         delta = np.zeros((T, self.nt))
         paths = np.zeros((T, self.nt), dtype='int')
-        biscores = np.array([self.score(bifv, average) for bifv in self.BF])
+        bscores = np.array([self.score(bfv, average) for bfv in self.BF])
 
         fv = self.instantiate(wordseq, 0, -1)
         delta[0] = self.score(fv, average)
 
         for i in range(1, T):
-            uniscores = self.score(self.unigram(wordseq, i), average)
-            scores = np.transpose(biscores + uniscores) + delta[i - 1]
+            uscores = self.score(self.unigram(wordseq, i), average)
+            scores = np.transpose(bscores + uscores) + delta[i - 1]
             paths[i] = np.argmax(scores, axis=1)
             delta[i] = scores[np.arange(self.nt), paths[i]]
         prev = np.argmax(delta[-1])

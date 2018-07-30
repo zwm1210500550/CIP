@@ -40,21 +40,22 @@ class LogLinearModel(object):
         # 记录最大准确率及对应的迭代次数
         max_e, max_precision = 0, 0.0
 
-        train_data = [(wordseq, i, ti)
-                      for wordseq, tiseq in train
-                      for i, ti in enumerate(tiseq)]
-        n = len(train_data)
+        training_data = [(wordseq, i, ti)
+                         for wordseq, tiseq in train
+                         for i, ti in enumerate(tiseq)]
+        # 训练集大小
+        n = len(training_data)
         # 迭代指定次数训练模型
         for epoch in range(epochs):
             start = datetime.now()
             # 随机打乱数据
             if shuffle:
-                random.shuffle(train_data)
+                random.shuffle(training_data)
             # 设置L2正则化系数
             if not regularize:
                 lmbda = 0
             # 按照指定大小对数据分割批次
-            batches = [train_data[i:i + batch_size]
+            batches = [training_data[i:i + batch_size]
                        for i in range(0, n, batch_size)]
             nb = len(batches)
             # 根据批次数据更新权重

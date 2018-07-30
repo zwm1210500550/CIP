@@ -38,9 +38,6 @@ train = corpus.load(config.ftrain)
 dev = corpus.load(config.fdev)
 file = args.file if args.file else config.glmpkl
 
-wordseqs, tagseqs = zip(*train)
-tags = sorted(set(np.hstack(tagseqs)))
-
 start = datetime.now()
 
 print("Creating Global Linear Model with %d tags" % corpus.nt)
